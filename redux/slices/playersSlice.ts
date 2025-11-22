@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import axios from 'axios';
 
 export interface Player {
   id: string;
@@ -27,6 +28,63 @@ export interface Player {
     performance: string;
   }[];
 }
+
+// DummyJSON API Configuration
+const DUMMYJSON_BASE_URL = 'https://dummyjson.com';
+
+// Transform DummyJSON user to Player format
+const transformUserToPlayer = (user: any): Player => {
+  const positions = ['Forward', 'Midfielder', 'Defender', 'Goalkeeper'];
+  const teams = ['Manchester City', 'Liverpool', 'Real Madrid', 'Barcelona', 'Al Nassr', 'Inter Miami'];
+  
+  // Generate consistent values based on user ID
+  const userId = parseInt(user.id);
+  const position = positions[userId % positions.length];
+  const team = teams[userId % teams.length];
+  const jerseyNumber = (userId % 23) + 1;
+  const rating = 7.5 + (userId % 20) / 10;
+  
+  return {
+    id: user.id.toString(),
+    name: `${user.firstName} ${user.lastName}`,
+    position,
+    team,
+    image: user.image,
+    rating: parseFloat(rating.toFixed(1)),
+    age: user.age,
+    nationality: user.address?.country || 'Unknown',
+    jerseyNumber,
+    bio: `Professional ${position.toLowerCase()} playing for ${team}. Known for exceptional skills and dedication.`,
+    stats: {
+      appearances: 150 + (userId * 10),
+      goals: position === 'Forward' ? 80 + userId * 5 : position === 'Midfielder' ? 30 + userId * 2 : position === 'Defender' ? 10 + userId : 0,
+      assists: position === 'Forward' || position === 'Midfielder' ? 40 + userId * 3 : 5 + userId,
+      yellowCards: 20 + (userId % 15),
+      redCards: userId % 3,
+    },
+    achievements: [
+      'League Champion',
+      'Player of the Season',
+      'Top Scorer Award',
+    ].slice(0, (userId % 3) + 1),
+    recentMatches: [
+      {
+        id: '1',
+        opponent: teams[(userId + 1) % teams.length],
+        date: '2025-11-20',
+        result: 'W 2-1',
+        performance: position === 'Goalkeeper' ? 'Clean Sheet' : '1 Goal',
+      },
+      {
+        id: '2',
+        opponent: teams[(userId + 2) % teams.length],
+        date: '2025-11-17',
+        result: 'D 1-1',
+        performance: '1 Assist',
+      },
+    ],
+  };
+};
 
 export interface PlayersResponse {
   data: Player[];
@@ -295,8 +353,42 @@ export const fetchPlayers = createAsyncThunk<
   'players/fetchPlayers',
   async ({ page = 1, searchQuery = '', position = 'all', team = 'all', refresh = false }, { rejectWithValue }) => {
     try {
-      await delay(800);
+      // Fetch from DummyJSON API
+      const limit = 10;
+      const skip = (page - 1) * limit;
+      const response = await axios.get(`${DUMMYJSON_BASE_URL}/users`, {
+        params: {
+          limit,
+          skip,
+          ...(searchQuery && { q: searchQuery }),
+        },
+      });
 
+      // Transform users to players
+      let players: Player[] = response.data.users.map(transformUserToPlayer);
+
+      // Filter by position (API doesn't support this, so we filter client-side)
+      if (position && position !== 'all') {
+        players = players.filter((player: Player) =>
+          player.position.toLowerCase() === position.toLowerCase()
+        );
+      }
+
+      // Filter by team
+      if (team && team !== 'all') {
+        players = players.filter((player: Player) =>
+          player.team.toLowerCase() === team.toLowerCase()
+        );
+      }
+
+      return {
+        data: players,
+        page,
+        totalPages: Math.ceil(response.data.total / limit),
+        totalPlayers: response.data.total,
+      };
+    } catch (error: any) {
+      // Fallback to dummy data if API fails
       let filteredPlayers = [...DUMMY_PLAYERS];
 
       // Filter by search query
@@ -336,8 +428,6 @@ export const fetchPlayers = createAsyncThunk<
         totalPages,
         totalPlayers,
       };
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch players');
     }
   }
 );
@@ -351,16 +441,22 @@ export const fetchPlayerDetails = createAsyncThunk<
   'players/fetchPlayerDetails',
   async (playerId, { rejectWithValue }) => {
     try {
-      await delay(600);
-
-      const player = DUMMY_PLAYERS.find(p => p.id === playerId);
-
-      if (!player) {
+      // Fetch from DummyJSON API
+      const response = await axios.get(`${DUMMYJSON_BASE_URL}/users/${playerId}`);
+      
+      if (!response.data) {
         return rejectWithValue('Player not found');
       }
 
+      // Transform user data to player format
+      const player = transformUserToPlayer(response.data);
       return player;
     } catch (error: any) {
+      // Fallback to dummy data if API fails
+      const player = DUMMY_PLAYERS.find(p => p.id === playerId);
+      if (player) {
+        return player;
+      }
       return rejectWithValue(error.message || 'Failed to fetch player details');
     }
   }
