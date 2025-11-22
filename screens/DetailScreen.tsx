@@ -18,6 +18,14 @@ import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { fetchMatchDetails } from '../redux/slices/matchesSlice';
 import { Match } from '../utils/api/sportsApi';
 
+interface LineupPlayer {
+  id: string;
+  name: string;
+  position: string;
+  number: number;
+  rating: number;
+}
+
 interface StatItemProps {
   label: string;
   value: string | number;
@@ -30,6 +38,31 @@ const StatItem: React.FC<StatItemProps> = ({ label, value, icon }) => (
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </View>
+);
+
+interface PlayerLineupCardProps {
+  player: LineupPlayer;
+  onPress: () => void;
+}
+
+const PlayerLineupCard: React.FC<PlayerLineupCardProps> = ({ player, onPress }) => (
+  <TouchableOpacity style={styles.lineupCard} onPress={onPress} activeOpacity={0.8}>
+    <View style={styles.lineupCardContent}>
+      <View style={styles.playerNumberBadge}>
+        <Text style={styles.playerNumber}>#{player.number}</Text>
+      </View>
+      <View style={styles.playerInfo}>
+        <Text style={styles.playerName} numberOfLines={1}>
+          {player.name}
+        </Text>
+        <Text style={styles.playerPosition}>{player.position}</Text>
+      </View>
+      <View style={styles.playerRating}>
+        <Ionicons name="star" size={12} color={colors.warning.icon} />
+        <Text style={styles.ratingText}>{player.rating}</Text>
+      </View>
+    </View>
+  </TouchableOpacity>
 );
 
 const DetailScreen = () => {
@@ -66,6 +99,28 @@ const DetailScreen = () => {
         time: match.time,
       }));
   }, [currentMatch, list]);
+
+  // Dummy starting XI data
+  const startingXI: LineupPlayer[] = useMemo(() => [
+    { id: '1', name: 'David de Gea', position: 'GK', number: 1, rating: 7.5 },
+    { id: '2', name: 'Harry Maguire', position: 'CB', number: 5, rating: 6.8 },
+    { id: '3', name: 'Lisandro Martínez', position: 'CB', number: 6, rating: 7.2 },
+    { id: '4', name: 'Diogo Dalot', position: 'RB', number: 20, rating: 7.1 },
+    { id: '5', name: 'Luke Shaw', position: 'LB', number: 23, rating: 6.9 },
+    { id: '6', name: 'Casemiro', position: 'DM', number: 18, rating: 7.6 },
+    { id: '7', name: 'Bruno Fernandes', position: 'AM', number: 8, rating: 8.2 },
+    { id: '8', name: 'Marcus Rashford', position: 'LW', number: 10, rating: 7.8 },
+    { id: '9', name: 'Antony', position: 'RW', number: 21, rating: 7.0 },
+    { id: '10', name: 'Alejandro Garnacho', position: 'ST', number: 17, rating: 7.4 },
+    { id: '11', name: 'Rasmus Højlund', position: 'ST', number: 11, rating: 7.3 },
+  ], []);
+
+  const handlePlayerPress = (playerId: string) => {
+    router.push({
+      pathname: '/player/[id]',
+      params: { id: playerId },
+    });
+  };
 
   const getStatusBadgeStyle = (status: string) => {
     switch (status) {
@@ -225,6 +280,24 @@ const DetailScreen = () => {
             <StatItem label="Corners" value="8" icon="flag" />
             <StatItem label="Fouls" value="14" icon="warning" />
             <StatItem label="Yellow Cards" value="3" icon="card" />
+          </View>
+        </View>
+
+        {/* Starting XI Section */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="people" size={24} color={colors.primary} />
+            <Text style={styles.sectionTitle}>{currentMatch.homeTeam} - Starting XI</Text>
+          </View>
+          
+          <View style={styles.lineupGrid}>
+            {startingXI.map((player) => (
+              <PlayerLineupCard
+                key={player.id}
+                player={player}
+                onPress={() => handlePlayerPress(player.id)}
+              />
+            ))}
           </View>
         </View>
 
@@ -530,6 +603,57 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: spacing.huge,
+  },
+  lineupGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  lineupCard: {
+    width: '48%',
+    backgroundColor: colors.background.dark,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+  },
+  lineupCardContent: {
+    padding: spacing.md,
+  },
+  playerNumberBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  playerNumber: {
+    fontSize: fontSize.md,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+  },
+  playerInfo: {
+    marginBottom: spacing.sm,
+  },
+  playerName: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  playerPosition: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+  },
+  playerRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  ratingText: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.text.secondary,
   },
 });
 

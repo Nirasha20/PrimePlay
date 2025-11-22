@@ -3,25 +3,25 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import PlayerCard from '../components/PlayerCard';
 import { borderRadius, colors, fontSize, spacing } from '../constants/theme';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import {
-  fetchPlayers,
-  Player,
-  resetPlayers,
-  setFilterPosition,
-  setFilterTeam,
-  setSearchQuery,
+    fetchPlayers,
+    Player,
+    resetPlayers,
+    setFilterPosition,
+    setFilterTeam,
+    setSearchQuery,
 } from '../redux/slices/playersSlice';
 
 const POSITIONS = ['All', 'Forward', 'Midfielder', 'Defender', 'Goalkeeper'];
