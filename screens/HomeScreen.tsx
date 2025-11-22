@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -8,12 +9,13 @@ import {
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
 import MatchCard from '../components/MatchCard';
-import { borderRadius, colors, fontSize, shadows, spacing } from '../constants/theme';
+import SearchBar from '../components/SearchBar';
+import SortAndFilter, { FilterStatus, SortOption } from '../components/SortAndFilter';
+import { borderRadius, colors, fontSize, spacing } from '../constants/theme';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { fetchMatches, setSelectedSport } from '../redux/slices/matchesSlice';
 import { Match } from '../utils/api/sportsApi';
@@ -21,11 +23,15 @@ import { Match } from '../utils/api/sportsApi';
 const SPORTS = ['All', 'Football', 'Cricket', 'Basketball', 'Tennis'];
 
 const HomeScreen = () => {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const { list, loading, error, refreshing, hasMore, page, selectedSport } = useAppSelector(
     (state) => state.matches
   );
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<FilterStatus>('all');
+  const [selectedSort, setSelectedSort] = useState<SortOption>('recent');
 
   useEffect(() => {
     loadMatches();
@@ -49,6 +55,35 @@ const HomeScreen = () => {
     dispatch(setSelectedSport(sport.toLowerCase()));
   };
 
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    // TODO: Implement search filtering
+    console.log('Searching for:', query);
+  }, []);
+
+  const handleFilterPress = () => {
+    setShowFilters(!showFilters);
+  };
+
+  const handleStatusChange = (status: FilterStatus) => {
+    setSelectedStatus(status);
+    // TODO: Filter matches by status
+    console.log('Filter by status:', status);
+  };
+
+  const handleSortChange = (sort: SortOption) => {
+    setSelectedSort(sort);
+    // TODO: Sort matches
+    console.log('Sort by:', sort);
+  };
+
+  const handleMatchPress = (matchId: string) => {
+    router.push({
+      pathname: '/match/[id]',
+      params: { id: matchId },
+    });
+  };
+
   const renderMatchCard = ({ item }: { item: Match }) => (
     <MatchCard
       id={item.id}
@@ -61,7 +96,7 @@ const HomeScreen = () => {
       date={item.date}
       time={item.time}
       image={item.image}
-      onPress={() => console.log('Match pressed:', item.id)}
+      onPress={() => handleMatchPress(item.id)}
     />
   );
 
@@ -110,16 +145,20 @@ const HomeScreen = () => {
         </View>
 
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={colors.icon.secondary} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search teams, players..."
-            placeholderTextColor={colors.text.placeholder}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+        <SearchBar
+          onSearch={handleSearch}
+          onFilterPress={handleFilterPress}
+        />
+
+        {/* Sort and Filter */}
+        {showFilters && (
+          <SortAndFilter
+            selectedStatus={selectedStatus}
+            selectedSort={selectedSort}
+            onStatusChange={handleStatusChange}
+            onSortChange={handleSortChange}
           />
-        </View>
+        )}
 
         {/* Sports Filter */}
         <ScrollView
@@ -209,23 +248,6 @@ const styles = StyleSheet.create({
   },
   themeToggle: {
     padding: spacing.sm,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.lg,
-    height: 48,
-    marginBottom: spacing.lg,
-  },
-  searchIcon: {
-    marginRight: spacing.md,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: fontSize.md,
-    color: colors.text.primary,
   },
   sportsFilter: {
     paddingVertical: spacing.sm,
