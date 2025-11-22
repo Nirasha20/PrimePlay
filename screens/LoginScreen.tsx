@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Image,
-} from 'react-native';
-import { Formik } from 'formik';
-import * as Yup from 'yup';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Formik } from 'formik';
+import React, { useState } from 'react';
+import {
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import * as Yup from 'yup';
+import { borderRadius, colors, fontSize, shadows, spacing } from '../constants/theme';
 
 // Validation Schema
 const LoginSchema = Yup.object().shape({
@@ -45,7 +45,7 @@ const LoginScreen = ({ navigation }: any) => {
 
   return (
     <LinearGradient
-      colors={['#1a1a2e', '#2d1b4e', '#4a148c']}
+      colors={colors.background.gradient}
       style={styles.container}
     >
       <KeyboardAvoidingView
@@ -90,13 +90,13 @@ const LoginScreen = ({ navigation }: any) => {
                       <Ionicons
                         name="mail-outline"
                         size={20}
-                        color="#a78bfa"
+                        color={colors.icon.primary}
                         style={styles.inputIcon}
                       />
                       <TextInput
                         style={styles.input}
                         placeholder="Email Address"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor={colors.text.placeholder}
                         value={values.email}
                         onChangeText={handleChange('email')}
                         onBlur={handleBlur('email')}
@@ -116,13 +116,13 @@ const LoginScreen = ({ navigation }: any) => {
                       <Ionicons
                         name="lock-closed-outline"
                         size={20}
-                        color="#a78bfa"
+                        color={colors.icon.primary}
                         style={styles.inputIcon}
                       />
                       <TextInput
                         style={styles.input}
                         placeholder="Password"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor={colors.text.placeholder}
                         value={values.password}
                         onChangeText={handleChange('password')}
                         onBlur={handleBlur('password')}
@@ -137,7 +137,7 @@ const LoginScreen = ({ navigation }: any) => {
                         <Ionicons
                           name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                           size={20}
-                          color="#a78bfa"
+                          color={colors.icon.primary}
                         />
                       </TouchableOpacity>
                     </View>
@@ -149,7 +149,7 @@ const LoginScreen = ({ navigation }: any) => {
                   {/* Login Error Display */}
                   {loginError ? (
                     <View style={styles.errorContainer}>
-                      <Ionicons name="alert-circle" size={16} color="#ef4444" />
+                      <Ionicons name="alert-circle" size={16} color={colors.error.icon} />
                       <Text style={styles.loginErrorText}>{loginError}</Text>
                     </View>
                   ) : null}
@@ -198,137 +198,129 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 40,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.huge,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: spacing.huge,
   },
   logoContainer: {
     width: 80,
     height: 80,
-    borderRadius: 20,
-    backgroundColor: '#a78bfa',
+    borderRadius: borderRadius.xl,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   appName: {
-    fontSize: 32,
+    fontSize: fontSize.huge,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
   },
   tagline: {
-    fontSize: 16,
-    color: '#d1d5db',
+    fontSize: fontSize.md,
+    color: colors.text.secondary,
   },
   formContainer: {
-    backgroundColor: '#1f2937',
-    borderRadius: 24,
-    padding: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.xxl,
+    padding: spacing.xxxl,
+    ...shadows.medium,
   },
   welcomeText: {
-    fontSize: 28,
+    fontSize: fontSize.xxxl,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 32,
+    color: colors.text.primary,
+    marginBottom: spacing.xxxl,
     textAlign: 'left',
   },
   form: {
     width: '100%',
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#374151',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    backgroundColor: colors.background.input,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.lg,
     height: 56,
     borderWidth: 1,
-    borderColor: '#4b5563',
+    borderColor: colors.border.default,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    color: '#fff',
+    fontSize: fontSize.md,
+    color: colors.text.primary,
     height: '100%',
   },
   eyeIcon: {
-    padding: 4,
+    padding: spacing.xs,
   },
   errorText: {
-    color: '#ef4444',
-    fontSize: 12,
+    color: colors.error.icon,
+    fontSize: fontSize.xs,
     marginTop: 6,
-    marginLeft: 4,
+    marginLeft: spacing.xs,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#7f1d1d',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 20,
+    backgroundColor: colors.error.background,
+    padding: spacing.md,
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing.xl,
   },
   loginErrorText: {
-    color: '#fca5a5',
-    fontSize: 14,
-    marginLeft: 8,
+    color: colors.error.text,
+    fontSize: fontSize.sm,
+    marginLeft: spacing.sm,
     flex: 1,
   },
   loginButton: {
-    backgroundColor: '#a855f7',
-    borderRadius: 12,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
     height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
-    shadowColor: '#a855f7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    marginTop: spacing.md,
+    ...shadows.primary,
   },
   loginButtonDisabled: {
     opacity: 0.6,
   },
   loginButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: colors.text.primary,
+    fontSize: fontSize.lg,
     fontWeight: 'bold',
   },
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: spacing.xxl,
   },
   signupText: {
-    color: '#d1d5db',
-    fontSize: 14,
+    color: colors.text.secondary,
+    fontSize: fontSize.sm,
   },
   signupLink: {
-    color: '#a78bfa',
-    fontSize: 14,
+    color: colors.primaryLight,
+    fontSize: fontSize.sm,
     fontWeight: 'bold',
   },
   footer: {
-    color: '#9ca3af',
-    fontSize: 12,
+    color: colors.text.tertiary,
+    fontSize: fontSize.xs,
     textAlign: 'center',
-    marginTop: 40,
+    marginTop: spacing.huge,
   },
 });
 
