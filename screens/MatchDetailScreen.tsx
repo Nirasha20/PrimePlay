@@ -265,6 +265,17 @@ const MatchDetailScreen = () => {
           )}
         </View>
 
+        {/* Action Buttons */}
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity style={styles.highlightsButton}>
+            <Text style={styles.highlightsButtonText}>Watch Highlights</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.shareActionButton}>
+            <Ionicons name="share-outline" size={20} color={colors.text.primary} />
+            <Text style={styles.shareButtonText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.bottomSpacer} />
       </ScrollView>
     </View>
@@ -534,6 +545,42 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
   teamTabTextActive: {
+    color: colors.text.primary,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.lg,
+    gap: spacing.md,
+  },
+  highlightsButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  highlightsButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+  },
+  shareActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background.card,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    gap: spacing.sm,
+  },
+  shareButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
     color: colors.text.primary,
   },
   bottomSpacer: {
