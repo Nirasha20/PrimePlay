@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
     Image,
@@ -21,9 +22,12 @@ export interface MatchCardProps {
   time: string;
   image?: string;
   onPress?: () => void;
+  isFavorite?: boolean;
+  onFavoritePress?: () => void;
 }
 
 const MatchCard: React.FC<MatchCardProps> = ({
+  id,
   sport,
   homeTeam,
   awayTeam,
@@ -34,9 +38,16 @@ const MatchCard: React.FC<MatchCardProps> = ({
   time,
   image,
   onPress,
+  isFavorite = false,
+  onFavoritePress,
 }) => {
   const colors = useThemedColors();
   const styles = createStyles(colors);
+
+  const handleFavoritePress = (e: any) => {
+    e.stopPropagation();
+    onFavoritePress?.();
+  };
   
   const getStatusBadge = () => {
     switch (status) {
@@ -78,6 +89,17 @@ const MatchCard: React.FC<MatchCardProps> = ({
             resizeMode="cover"
           />
           {getStatusBadge()}
+          <TouchableOpacity 
+            style={styles.favoriteButton}
+            onPress={handleFavoritePress}
+            activeOpacity={0.7}
+          >
+            <Ionicons 
+              name={isFavorite ? 'heart' : 'heart-outline'} 
+              size={24} 
+              color={isFavorite ? colors.error.icon : colors.text.primary}
+            />
+          </TouchableOpacity>
         </View>
       )}
 
@@ -135,6 +157,17 @@ const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.
   matchImage: {
     width: '100%',
     height: '100%',
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: spacing.lg,
+    left: spacing.lg,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statusBadge: {
     position: 'absolute',

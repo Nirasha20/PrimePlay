@@ -1,15 +1,75 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import React, { useCallback } from 'react';
+import { FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import BottomTabBar from '../components/BottomTabBar';
+import MatchCard from '../components/MatchCard';
 import ThemeToggle from '../components/ThemeToggle';
 import { borderRadius, fontSize, shadows, spacing } from '../constants/theme';
 import { useThemedColors } from '../hooks/useThemedColors';
+import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import { saveFavorites, toggleFavorite } from '../redux/slices/favoritesSlice';
+import { Match } from '../utils/api/sportsApi';
 
 const FavoritesScreen = () => {
+  const router = useRouter();
   const colors = useThemedColors();
   const styles = createStyles(colors);
+  const dispatch = useAppDispatch();
+  const favoriteMatches = useAppSelector((state) => state.favorites.favoriteMatches);
+
+  const handleFavoritePress = useCallback((match: Match) => {
+    dispatch(toggleFavorite(match));
+    // Save to AsyncStorage
+    const updatedFavorites = favoriteMatches.filter(fav => fav.id !== match.id);
+    dispatch(saveFavorites(updatedFavorites));
+  }, [dispatch, favoriteMatches]);
+
+  const handleMatchPress = (matchId: string) => {
+    router.push({
+      pathname: '/match/[id]',
+      params: { id: matchId },
+    });
+  };
+
+  const handleExplorePress = () => {
+    router.push('/home');
+  };
+
+  const renderMatchCard = ({ item }: { item: Match }) => (
+    <MatchCard
+      id={item.id}
+      sport={item.sport}
+      homeTeam={item.homeTeam}
+      awayTeam={item.awayTeam}
+      homeScore={item.homeScore}
+      awayScore={item.awayScore}
+      status={item.status}
+      date={item.date}
+      time={item.time}
+      image={item.image}
+      isFavorite={true}
+      onFavoritePress={() => handleFavoritePress(item)}
+      onPress={() => handleMatchPress(item.id)}
+    />
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <View style={styles.iconCircle}>
+        <Ionicons name="heart-outline" size={64} color={colors.text.tertiary} />
+      </View>
+      <Text style={styles.emptyTitle}>No Favorites Yet</Text>
+      <Text style={styles.emptySubtitle}>
+        Tap the heart icon on any match to add it to your favorites
+      </Text>
+      <TouchableOpacity style={styles.exploreButton} onPress={handleExplorePress}>
+        <Text style={styles.exploreButtonText}>Explore Matches</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -18,28 +78,29 @@ const FavoritesScreen = () => {
           <Text style={styles.headerTitle}>Favorites</Text>
           <View style={{flexDirection: 'row', gap: spacing.sm}}>
             <ThemeToggle />
-            <TouchableOpacity style={styles.filterButton}>
-              <Ionicons name="options-outline" size={24} color={colors.text.primary} />
-            </TouchableOpacity>
           </View>
         </View>
+        {favoriteMatches.length > 0 && (
+          <Text style={styles.favoriteCount}>
+            {favoriteMatches.length} {favoriteMatches.length === 1 ? 'match' : 'matches'} saved
+          </Text>
+        )}
       </LinearGradient>
 
       {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.emptyState}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="heart-outline" size={64} color={colors.text.tertiary} />
-          </View>
-          <Text style={styles.emptyTitle}>No Favorites Yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Tap the heart icon on any match to add it to your favorites
-          </Text>
-          <TouchableOpacity style={styles.exploreButton}>
-            <Text style={styles.exploreButtonText}>Explore Matches</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+      {favoriteMatches.length > 0 ? (
+        <FlatList
+          data={favoriteMatches}
+          renderItem={renderMatchCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {renderEmptyState()}
+        </ScrollView>
+      )}
 
       {/* Bottom Navigation */}
       <BottomTabBar />
@@ -67,6 +128,11 @@ const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.
     fontWeight: 'bold',
     color: colors.text.primary,
   },
+  favoriteCount: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+    marginTop: spacing.md,
+  },
   filterButton: {
     width: 40,
     height: 40,
@@ -77,6 +143,11 @@ const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.
   },
   content: {
     flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.lg,
+    paddingBottom: 100,
   },
   emptyState: {
     alignItems: 'center',

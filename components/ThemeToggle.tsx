@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
+import { borderRadius } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
-import { borderRadius, spacing } from '../constants/theme';
 import { useThemedColors } from '../hooks/useThemedColors';
 
 interface ThemeToggleProps {

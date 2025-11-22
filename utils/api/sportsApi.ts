@@ -1,3 +1,8 @@
+import axios from 'axios';
+
+// TheSportsDB API Configuration
+const SPORTS_DB_BASE_URL = 'https://www.thesportsdb.com/api/v1/json/3';
+
 // Using dummy data instead of real API calls
 export interface Match {
   id: string;
@@ -18,6 +23,97 @@ export interface MatchesResponse {
   totalPages: number;
   totalMatches: number;
 }
+
+// Transform TheSportsDB event to our Match format
+const transformEventToMatch = (event: any): Match => {
+  const homeScore = event.intHomeScore ? parseInt(event.intHomeScore) : undefined;
+  const awayScore = event.intAwayScore ? parseInt(event.intAwayScore) : undefined;
+  
+  let status: 'live' | 'completed' | 'upcoming' = 'upcoming';
+  if (event.strStatus === 'Match Finished' || event.strStatus === 'FT') {
+    status = 'completed';
+  } else if (event.strStatus === 'In Play' || event.strStatus === 'Live') {
+    status = 'live';
+  }
+
+  return {
+    id: event.idEvent,
+    sport: event.strSport || 'Football',
+    homeTeam: event.strHomeTeam,
+    awayTeam: event.strAwayTeam,
+    homeScore,
+    awayScore,
+    status,
+    date: event.dateEvent,
+    time: event.strTime || event.strTimeLocal || 'TBD',
+    image: event.strThumb || event.strSquare || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
+  };
+};
+
+// Fetch live/recent events from TheSportsDB
+export const fetchLiveEvents = async (sport?: string): Promise<Match[]> => {
+  try {
+    const response = await axios.get(`${SPORTS_DB_BASE_URL}/eventsseason.php`, {
+      params: {
+        id: 4328, // English Premier League
+        s: '2024-2025'
+      }
+    });
+
+    if (response.data && response.data.events) {
+      return response.data.events
+        .slice(0, 15) // Get latest 15 matches
+        .map(transformEventToMatch);
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching live events:', error);
+    return getFallbackMatches();
+  }
+};
+
+// Fetch events from multiple leagues
+export const fetchMultipleLeagueEvents = async (): Promise<Match[]> => {
+  try {
+    const leagues = [
+      { id: 4328, name: 'English Premier League' },
+      { id: 4335, name: 'Spanish La Liga' },
+      { id: 4331, name: 'German Bundesliga' },
+      { id: 4332, name: 'Italian Serie A' },
+    ];
+
+    const requests = leagues.map(league =>
+      axios.get(`${SPORTS_DB_BASE_URL}/eventsseason.php`, {
+        params: {
+          id: league.id,
+          s: '2024-2025'
+        }
+      }).catch(err => ({ data: { events: [] } }))
+    );
+
+    const responses = await Promise.all(requests);
+    
+    const allEvents: Match[] = [];
+    responses.forEach(response => {
+      if (response.data && response.data.events) {
+        const events = response.data.events
+          .slice(0, 5) // Take 5 matches from each league
+          .map(transformEventToMatch);
+        allEvents.push(...events);
+      }
+    });
+
+    return allEvents.length > 0 ? allEvents : getFallbackMatches();
+  } catch (error) {
+    console.error('Error fetching multiple league events:', error);
+    return getFallbackMatches();
+  }
+};
+
+// Fallback dummy matches if API fails
+const getFallbackMatches = (): Match[] => {
+  return DUMMY_MATCHES;
+};
 
 // Dummy match data
 const DUMMY_MATCHES: Match[] = [
@@ -319,31 +415,43 @@ const DUMMY_MATCHES: Match[] = [
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const sportsApi = {
-  // Fetch matches with pagination
+  // Fetch matches with pagination - NOW USES REAL API
   getMatches: async (page: number = 1, limit: number = 10, sport?: string): Promise<MatchesResponse> => {
-    await delay(800); // Simulate network delay
+    try {
+      // Fetch from real TheSportsDB API
+      const matches = await fetchMultipleLeagueEvents();
+      
+      let filteredMatches = [...matches];
+      
+      // Filter by sport if provided
+      if (sport && sport !== 'All' && sport !== 'all') {
+        filteredMatches = filteredMatches.filter(match => 
+          match.sport.toLowerCase() === sport.toLowerCase()
+        );
+      }
 
-    let filteredMatches = [...DUMMY_MATCHES];
-    
-    // Filter by sport if provided
-    if (sport && sport !== 'All') {
-      filteredMatches = filteredMatches.filter(match => 
-        match.sport.toLowerCase() === sport.toLowerCase()
-      );
+      // Sort by date (most recent first)
+      filteredMatches.sort((a, b) => {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      });
+
+      const totalMatches = filteredMatches.length;
+      const totalPages = Math.ceil(totalMatches / limit);
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedMatches = filteredMatches.slice(startIndex, endIndex);
+
+      return {
+        data: paginatedMatches,
+        page,
+        totalPages,
+        totalMatches,
+      };
+    } catch (error) {
+      console.error('Error in getMatches:', error);
+      // Fallback to dummy data if API fails
+      return getMatchesFallback(page, limit, sport);
     }
-
-    const totalMatches = filteredMatches.length;
-    const totalPages = Math.ceil(totalMatches / limit);
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedMatches = filteredMatches.slice(startIndex, endIndex);
-
-    return {
-      data: paginatedMatches,
-      page,
-      totalPages,
-      totalMatches,
-    };
   },
 
   // Fetch single match details
@@ -361,9 +469,13 @@ export const sportsApi = {
 
   // Fetch live matches
   getLiveMatches: async (): Promise<Match[]> => {
-    await delay(500); // Simulate network delay
-
-    return DUMMY_MATCHES.filter(match => match.status === 'live');
+    try {
+      const matches = await fetchMultipleLeagueEvents();
+      return matches.filter(match => match.status === 'live');
+    } catch (error) {
+      console.error('Error fetching live matches:', error);
+      return DUMMY_MATCHES.filter(match => match.status === 'live');
+    }
   },
 
   // Search matches by query
@@ -377,6 +489,32 @@ export const sportsApi = {
       match.sport.toLowerCase().includes(lowercaseQuery)
     );
   },
+};
+
+// Fallback function when API fails
+const getMatchesFallback = async (page: number = 1, limit: number = 10, sport?: string): Promise<MatchesResponse> => {
+  await delay(800);
+
+  let filteredMatches = [...DUMMY_MATCHES];
+  
+  if (sport && sport !== 'All') {
+    filteredMatches = filteredMatches.filter(match => 
+      match.sport.toLowerCase() === sport.toLowerCase()
+    );
+  }
+
+  const totalMatches = filteredMatches.length;
+  const totalPages = Math.ceil(totalMatches / limit);
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const paginatedMatches = filteredMatches.slice(startIndex, endIndex);
+
+  return {
+    data: paginatedMatches,
+    page,
+    totalPages,
+    totalMatches,
+  };
 };
 
 export default sportsApi;

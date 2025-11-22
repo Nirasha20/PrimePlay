@@ -20,6 +20,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import { borderRadius, fontSize, spacing } from '../constants/theme';
 import { useThemedColors } from '../hooks/useThemedColors';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import { loadFavorites, saveFavorites, toggleFavorite } from '../redux/slices/favoritesSlice';
 import { fetchMatches, setSelectedSport } from '../redux/slices/matchesSlice';
 import { Match } from '../utils/api/sportsApi';
 
@@ -33,10 +34,16 @@ const HomeScreen = () => {
   const { list, loading, error, refreshing, hasMore, page, selectedSport } = useAppSelector(
     (state) => state.matches
   );
+  const favoriteMatches = useAppSelector((state) => state.favorites.favoriteMatches);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<FilterStatus>('all');
   const [selectedSort, setSelectedSort] = useState<SortOption>('recent');
+
+  useEffect(() => {
+    // Load favorites from storage on mount
+    dispatch(loadFavorites());
+  }, [dispatch]);
 
   useEffect(() => {
     loadMatches();
@@ -89,21 +96,37 @@ const HomeScreen = () => {
     });
   };
 
-  const renderMatchCard = ({ item }: { item: Match }) => (
-    <MatchCard
-      id={item.id}
-      sport={item.sport}
-      homeTeam={item.homeTeam}
-      awayTeam={item.awayTeam}
-      homeScore={item.homeScore}
-      awayScore={item.awayScore}
-      status={item.status}
-      date={item.date}
-      time={item.time}
-      image={item.image}
-      onPress={() => handleMatchPress(item.id)}
-    />
-  );
+  const handleFavoritePress = useCallback((match: Match) => {
+    dispatch(toggleFavorite(match));
+    // Save to AsyncStorage
+    dispatch(saveFavorites(
+      favoriteMatches.some(fav => fav.id === match.id)
+        ? favoriteMatches.filter(fav => fav.id !== match.id)
+        : [match, ...favoriteMatches]
+    ));
+  }, [dispatch, favoriteMatches]);
+
+  const renderMatchCard = ({ item }: { item: Match }) => {
+    const isFavorite = favoriteMatches.some(fav => fav.id === item.id);
+    
+    return (
+      <MatchCard
+        id={item.id}
+        sport={item.sport}
+        homeTeam={item.homeTeam}
+        awayTeam={item.awayTeam}
+        homeScore={item.homeScore}
+        awayScore={item.awayScore}
+        status={item.status}
+        date={item.date}
+        time={item.time}
+        image={item.image}
+        isFavorite={isFavorite}
+        onFavoritePress={() => handleFavoritePress(item)}
+        onPress={() => handleMatchPress(item.id)}
+      />
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>

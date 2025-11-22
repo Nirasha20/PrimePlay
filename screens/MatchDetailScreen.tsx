@@ -14,6 +14,9 @@ import {
 import ThemeToggle from '../components/ThemeToggle';
 import { borderRadius, fontSize, shadows, spacing } from '../constants/theme';
 import { useThemedColors } from '../hooks/useThemedColors';
+import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import { saveFavorites, toggleFavorite } from '../redux/slices/favoritesSlice';
+import { fetchMatchDetails } from '../redux/slices/matchesSlice';
 
 interface Player {
   id: number;
@@ -73,14 +76,22 @@ const MatchDetailScreen = () => {
   const router = useRouter();
   const colors = useThemedColors();
   const styles = createStyles(colors);
+  const dispatch = useAppDispatch();
+  const favoriteMatches = useAppSelector((state) => state.favorites.favoriteMatches);
+  const currentMatch = useAppSelector((state) => state.matches.currentMatch);
+  const detailsLoading = useAppSelector((state) => state.matches.detailsLoading);
   const [homeTeamPlayers, setHomeTeamPlayers] = useState<Player[]>([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
 
   useEffect(() => {
+    // Fetch match details from API
+    if (id) {
+      dispatch(fetchMatchDetails(id));
+    }
     fetchPlayers();
-  }, []);
+  }, [id, dispatch]);
 
   const fetchPlayers = async () => {
     try {
@@ -123,24 +134,53 @@ const MatchDetailScreen = () => {
     }
   };
 
-  // Match data using placeholder
-  const match = {
+  // Use match data from Redux or fallback to placeholder
+  const match = currentMatch || {
     id,
     sport: 'Football',
-    homeTeam: 'Manchester United',
-    awayTeam: 'Liverpool',
-    homeScore: 2,
-    awayScore: 2,
-    status: 'live',
-    date: 'Today',
-    time: '45:30',
+    homeTeam: 'Loading...',
+    awayTeam: 'Loading...',
+    homeScore: 0,
+    awayScore: 0,
+    status: 'upcoming' as const,
+    date: 'TBD',
+    time: 'TBD',
     image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
+  };
+
+  // Calculate additional display data
+  const displayData = {
     viewers: '2.3M',
     totalPlayers: '11 v 11',
-    minutes: '45+3',
+    minutes: match.status === 'live' ? '45+3' : match.status === 'completed' ? 'FT' : 'Not Started',
     competition: 'Premier League',
-    venue: 'Old Trafford',
+    venue: 'Stadium',
     attendance: '74,000',
+  };
+
+  // Check if this match is in favorites
+  const isFavorite = favoriteMatches.some(fav => fav.id === id);
+
+  const handleFavoritePress = () => {
+    const matchData: any = {
+      id: match.id,
+      sport: match.sport,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
+      status: match.status as 'live' | 'completed' | 'upcoming',
+      date: match.date,
+      time: match.time,
+      image: match.image,
+    };
+    
+    dispatch(toggleFavorite(matchData));
+    // Save to AsyncStorage
+    const updatedFavorites = isFavorite
+      ? favoriteMatches.filter(fav => fav.id !== id)
+      : [matchData, ...favoriteMatches];
+    dispatch(saveFavorites(updatedFavorites));
   };
 
   return (
@@ -155,6 +195,16 @@ const MatchDetailScreen = () => {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Match Details</Text>
           <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.shareButton}
+              onPress={handleFavoritePress}
+            >
+              <Ionicons 
+                name={isFavorite ? 'heart' : 'heart-outline'} 
+                size={24} 
+                color={isFavorite ? colors.error.icon : colors.text.primary}
+              />
+            </TouchableOpacity>
             <ThemeToggle />
             <TouchableOpacity style={styles.shareButton}>
               <Ionicons name="share-outline" size={24} color={colors.text.primary} />
@@ -163,7 +213,13 @@ const MatchDetailScreen = () => {
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      {detailsLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading match details...</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Match Image */}
         {match.image && (
           <Image
@@ -208,9 +264,9 @@ const MatchDetailScreen = () => {
 
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
-          <StatCard icon="eye" value={match.viewers} label="Viewers" colors={colors} />
-          <StatCard icon="people" value={match.totalPlayers} label="Players" colors={colors} />
-          <StatCard icon="flash" value={match.minutes} label="Minutes" colors={colors} />
+          <StatCard icon="eye" value={displayData.viewers} label="Viewers" colors={colors} />
+          <StatCard icon="people" value={displayData.totalPlayers} label="Players" colors={colors} />
+          <StatCard icon="flash" value={displayData.minutes} label="Minutes" colors={colors} />
         </View>
 
         {/* Match Info */}
@@ -219,17 +275,17 @@ const MatchDetailScreen = () => {
           
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Competition</Text>
-            <Text style={styles.infoValue}>{match.competition}</Text>
+            <Text style={styles.infoValue}>{displayData.competition}</Text>
           </View>
           
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Venue</Text>
-            <Text style={styles.infoValue}>{match.venue}</Text>
+            <Text style={styles.infoValue}>{displayData.venue}</Text>
           </View>
           
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Attendance</Text>
-            <Text style={styles.infoValue}>{match.attendance}</Text>
+            <Text style={styles.infoValue}>{displayData.attendance}</Text>
           </View>
         </View>
 
@@ -258,9 +314,9 @@ const MatchDetailScreen = () => {
           <Text style={styles.lineupTitle}>Starting XI</Text>
           
           {loading ? (
-            <View style={styles.loadingContainer}>
+            <View style={styles.playerLoadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Loading players...</Text>
+              <Text style={styles.playerLoadingText}>Loading players...</Text>
             </View>
           ) : (
             <View style={styles.playersGrid}>
@@ -294,6 +350,7 @@ const MatchDetailScreen = () => {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+      )}
     </View>
   );
 };
@@ -340,6 +397,17 @@ const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.
   },
   content: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xxl,
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    fontSize: fontSize.md,
+    color: colors.text.secondary,
   },
   matchImage: {
     width: '100%',
@@ -484,11 +552,11 @@ const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.
     color: colors.text.primary,
     marginBottom: spacing.lg,
   },
-  loadingContainer: {
+  playerLoadingContainer: {
     alignItems: 'center',
     paddingVertical: spacing.xxxl,
   },
-  loadingText: {
+  playerLoadingText: {
     fontSize: fontSize.md,
     color: colors.text.tertiary,
     marginTop: spacing.md,
