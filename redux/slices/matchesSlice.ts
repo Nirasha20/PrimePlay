@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import sportsApi, { Match, MatchesResponse } from '../../utils/api/sportsApi';
 
 interface MatchesState {

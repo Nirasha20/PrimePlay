@@ -1,8 +1,9 @@
 import axios from 'axios';
-import { API_BASE_URL } from '@env';
+
+const API_BASE_URL = (process.env.API_BASE_URL as string) || 'http://localhost:3000/api';
 
 const api = axios.create({
-  baseURL: API_BASE_URL || 'http://localhost:3000/api',
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

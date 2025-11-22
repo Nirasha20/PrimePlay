@@ -1,22 +1,22 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  RefreshControl,
-  TouchableOpacity,
-  Image,
-  TextInput,
-  ActivityIndicator,
-  ScrollView,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import MatchCard from '../components/MatchCard';
+import { borderRadius, colors, fontSize, shadows, spacing } from '../constants/theme';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { fetchMatches, setSelectedSport } from '../redux/slices/matchesSlice';
 import { Match } from '../utils/api/sportsApi';
-import { colors, spacing, borderRadius, fontSize, shadows } from '../constants/theme';
 
 const SPORTS = ['All', 'Football', 'Cricket', 'Basketball', 'Tennis'];
 
@@ -50,48 +50,19 @@ const HomeScreen = () => {
   };
 
   const renderMatchCard = ({ item }: { item: Match }) => (
-    <TouchableOpacity style={styles.matchCard} activeOpacity={0.8}>
-      {item.image && (
-        <Image source={{ uri: item.image }} style={styles.matchImage} />
-      )}
-      
-      {item.status === 'live' && (
-        <View style={styles.liveBadge}>
-          <Text style={styles.liveText}>Live</Text>
-        </View>
-      )}
-      
-      {item.status === 'completed' && (
-        <View style={styles.completedBadge}>
-          <Text style={styles.completedText}>Completed</Text>
-        </View>
-      )}
-
-      <View style={styles.matchContent}>
-        <Text style={styles.sportLabel}>{item.sport.toUpperCase()}</Text>
-        
-        <View style={styles.teamsContainer}>
-          <View style={styles.teamRow}>
-            <Text style={styles.teamName}>{item.homeTeam}</Text>
-            {item.homeScore !== undefined && (
-              <Text style={styles.score}>{item.homeScore}</Text>
-            )}
-          </View>
-          
-          <View style={styles.teamRow}>
-            <Text style={styles.teamName}>{item.awayTeam}</Text>
-            {item.awayScore !== undefined && (
-              <Text style={styles.score}>{item.awayScore}</Text>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.matchFooter}>
-          <Text style={styles.dateText}>{item.date}</Text>
-          <Text style={styles.timeText}>{item.time}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+    <MatchCard
+      id={item.id}
+      sport={item.sport}
+      homeTeam={item.homeTeam}
+      awayTeam={item.awayTeam}
+      homeScore={item.homeScore}
+      awayScore={item.awayScore}
+      status={item.status}
+      date={item.date}
+      time={item.time}
+      image={item.image}
+      onPress={() => console.log('Match pressed:', item.id)}
+    />
   );
 
   const renderEmptyState = () => (
@@ -290,89 +261,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: spacing.xxl,
-  },
-  matchCard: {
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.lg,
-    marginBottom: spacing.lg,
-    overflow: 'hidden',
-    ...shadows.medium,
-  },
-  matchImage: {
-    width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-  },
-  liveBadge: {
-    position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
-    backgroundColor: colors.error.icon,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
-  },
-  liveText: {
-    color: colors.text.primary,
-    fontSize: fontSize.xs,
-    fontWeight: 'bold',
-  },
-  completedBadge: {
-    position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
-    backgroundColor: colors.text.tertiary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
-  },
-  completedText: {
-    color: colors.text.primary,
-    fontSize: fontSize.xs,
-    fontWeight: 'bold',
-  },
-  matchContent: {
-    padding: spacing.lg,
-  },
-  sportLabel: {
-    fontSize: fontSize.xs,
-    color: colors.primary,
-    fontWeight: 'bold',
-    marginBottom: spacing.sm,
-  },
-  teamsContainer: {
-    marginBottom: spacing.md,
-  },
-  teamRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  teamName: {
-    fontSize: fontSize.md,
-    color: colors.text.primary,
-    fontWeight: '600',
-    flex: 1,
-  },
-  score: {
-    fontSize: fontSize.xl,
-    color: colors.text.primary,
-    fontWeight: 'bold',
-  },
-  matchFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  dateText: {
-    fontSize: fontSize.xs,
-    color: colors.text.tertiary,
-  },
-  timeText: {
-    fontSize: fontSize.xs,
-    color: colors.text.tertiary,
   },
   footerLoader: {
     paddingVertical: spacing.xl,
