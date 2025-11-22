@@ -12,6 +12,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import BottomTabBar from '../components/BottomTabBar';
 import MatchCard from '../components/MatchCard';
 import SearchBar from '../components/SearchBar';
 import SortAndFilter, { FilterStatus, SortOption } from '../components/SortAndFilter';
@@ -216,6 +217,9 @@ const HomeScreen = () => {
           />
         )}
       </View>
+      
+      {/* Bottom Navigation */}
+      <BottomTabBar />
     </View>
   );
 };
@@ -282,7 +286,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   listContent: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: 100,
   },
   footerLoader: {
     paddingVertical: spacing.xl,
