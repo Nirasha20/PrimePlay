@@ -1,31 +1,49 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  RefreshControl,
-  TouchableOpacity,
-  Image,
-  TextInput,
-  ActivityIndicator,
-  ScrollView,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import BottomTabBar from '../components/BottomTabBar';
+import MatchCard from '../components/MatchCard';
+import SearchBar from '../components/SearchBar';
+import SortAndFilter, { FilterStatus, SortOption } from '../components/SortAndFilter';
+import ThemeToggle from '../components/ThemeToggle';
+import { borderRadius, fontSize, spacing } from '../constants/theme';
+import { useThemedColors } from '../hooks/useThemedColors';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import { loadFavorites, saveFavorites, toggleFavorite } from '../redux/slices/favoritesSlice';
 import { fetchMatches, setSelectedSport } from '../redux/slices/matchesSlice';
 import { Match } from '../utils/api/sportsApi';
-import { colors, spacing, borderRadius, fontSize, shadows } from '../constants/theme';
 
 const SPORTS = ['All', 'Football', 'Cricket', 'Basketball', 'Tennis'];
 
 const HomeScreen = () => {
+  const router = useRouter();
   const dispatch = useAppDispatch();
+  const colors = useThemedColors();
+  const styles = createStyles(colors);
   const { list, loading, error, refreshing, hasMore, page, selectedSport } = useAppSelector(
     (state) => state.matches
   );
+  const favoriteMatches = useAppSelector((state) => state.favorites.favoriteMatches);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<FilterStatus>('all');
+  const [selectedSort, setSelectedSort] = useState<SortOption>('recent');
+
+  useEffect(() => {
+    // Load favorites from storage on mount
+    dispatch(loadFavorites());
+  }, [dispatch]);
 
   useEffect(() => {
     loadMatches();
@@ -49,50 +67,66 @@ const HomeScreen = () => {
     dispatch(setSelectedSport(sport.toLowerCase()));
   };
 
-  const renderMatchCard = ({ item }: { item: Match }) => (
-    <TouchableOpacity style={styles.matchCard} activeOpacity={0.8}>
-      {item.image && (
-        <Image source={{ uri: item.image }} style={styles.matchImage} />
-      )}
-      
-      {item.status === 'live' && (
-        <View style={styles.liveBadge}>
-          <Text style={styles.liveText}>Live</Text>
-        </View>
-      )}
-      
-      {item.status === 'completed' && (
-        <View style={styles.completedBadge}>
-          <Text style={styles.completedText}>Completed</Text>
-        </View>
-      )}
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    // TODO: Implement search filtering
+    console.log('Searching for:', query);
+  }, []);
 
-      <View style={styles.matchContent}>
-        <Text style={styles.sportLabel}>{item.sport.toUpperCase()}</Text>
-        
-        <View style={styles.teamsContainer}>
-          <View style={styles.teamRow}>
-            <Text style={styles.teamName}>{item.homeTeam}</Text>
-            {item.homeScore !== undefined && (
-              <Text style={styles.score}>{item.homeScore}</Text>
-            )}
-          </View>
-          
-          <View style={styles.teamRow}>
-            <Text style={styles.teamName}>{item.awayTeam}</Text>
-            {item.awayScore !== undefined && (
-              <Text style={styles.score}>{item.awayScore}</Text>
-            )}
-          </View>
-        </View>
+  const handleFilterPress = () => {
+    setShowFilters(!showFilters);
+  };
 
-        <View style={styles.matchFooter}>
-          <Text style={styles.dateText}>{item.date}</Text>
-          <Text style={styles.timeText}>{item.time}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+  const handleStatusChange = (status: FilterStatus) => {
+    setSelectedStatus(status);
+    // TODO: Filter matches by status
+    console.log('Filter by status:', status);
+  };
+
+  const handleSortChange = (sort: SortOption) => {
+    setSelectedSort(sort);
+    // TODO: Sort matches
+    console.log('Sort by:', sort);
+  };
+
+  const handleMatchPress = (matchId: string) => {
+    router.push({
+      pathname: '/match/[id]',
+      params: { id: matchId },
+    });
+  };
+
+  const handleFavoritePress = useCallback((match: Match) => {
+    dispatch(toggleFavorite(match));
+    // Save to AsyncStorage
+    dispatch(saveFavorites(
+      favoriteMatches.some(fav => fav.id === match.id)
+        ? favoriteMatches.filter(fav => fav.id !== match.id)
+        : [match, ...favoriteMatches]
+    ));
+  }, [dispatch, favoriteMatches]);
+
+  const renderMatchCard = ({ item }: { item: Match }) => {
+    const isFavorite = favoriteMatches.some(fav => fav.id === item.id);
+    
+    return (
+      <MatchCard
+        id={item.id}
+        sport={item.sport}
+        homeTeam={item.homeTeam}
+        awayTeam={item.awayTeam}
+        homeScore={item.homeScore}
+        awayScore={item.awayScore}
+        status={item.status}
+        date={item.date}
+        time={item.time}
+        image={item.image}
+        isFavorite={isFavorite}
+        onFavoritePress={() => handleFavoritePress(item)}
+        onPress={() => handleMatchPress(item.id)}
+      />
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
@@ -133,22 +167,24 @@ const HomeScreen = () => {
             <Ionicons name="football" size={24} color={colors.text.primary} />
             <Text style={styles.appName}>PrimePlay</Text>
           </View>
-          <TouchableOpacity style={styles.themeToggle}>
-            <Ionicons name="moon-outline" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
+          <ThemeToggle />
         </View>
 
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={colors.icon.secondary} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search teams, players..."
-            placeholderTextColor={colors.text.placeholder}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+        <SearchBar
+          onSearch={handleSearch}
+          onFilterPress={handleFilterPress}
+        />
+
+        {/* Sort and Filter */}
+        {showFilters && (
+          <SortAndFilter
+            selectedStatus={selectedStatus}
+            selectedSort={selectedSort}
+            onStatusChange={handleStatusChange}
+            onSortChange={handleSortChange}
           />
-        </View>
+        )}
 
         {/* Sports Filter */}
         <ScrollView
@@ -206,11 +242,14 @@ const HomeScreen = () => {
           />
         )}
       </View>
+      
+      {/* Bottom Navigation */}
+      <BottomTabBar />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.dark,
@@ -235,26 +274,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text.primary,
     marginLeft: spacing.md,
-  },
-  themeToggle: {
-    padding: spacing.sm,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.lg,
-    height: 48,
-    marginBottom: spacing.lg,
-  },
-  searchIcon: {
-    marginRight: spacing.md,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: fontSize.md,
-    color: colors.text.primary,
   },
   sportsFilter: {
     paddingVertical: spacing.sm,
@@ -289,90 +308,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   listContent: {
-    paddingBottom: spacing.xxl,
-  },
-  matchCard: {
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.lg,
-    marginBottom: spacing.lg,
-    overflow: 'hidden',
-    ...shadows.medium,
-  },
-  matchImage: {
-    width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-  },
-  liveBadge: {
-    position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
-    backgroundColor: colors.error.icon,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
-  },
-  liveText: {
-    color: colors.text.primary,
-    fontSize: fontSize.xs,
-    fontWeight: 'bold',
-  },
-  completedBadge: {
-    position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
-    backgroundColor: colors.text.tertiary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
-  },
-  completedText: {
-    color: colors.text.primary,
-    fontSize: fontSize.xs,
-    fontWeight: 'bold',
-  },
-  matchContent: {
-    padding: spacing.lg,
-  },
-  sportLabel: {
-    fontSize: fontSize.xs,
-    color: colors.primary,
-    fontWeight: 'bold',
-    marginBottom: spacing.sm,
-  },
-  teamsContainer: {
-    marginBottom: spacing.md,
-  },
-  teamRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  teamName: {
-    fontSize: fontSize.md,
-    color: colors.text.primary,
-    fontWeight: '600',
-    flex: 1,
-  },
-  score: {
-    fontSize: fontSize.xl,
-    color: colors.text.primary,
-    fontWeight: 'bold',
-  },
-  matchFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  dateText: {
-    fontSize: fontSize.xs,
-    color: colors.text.tertiary,
-  },
-  timeText: {
-    fontSize: fontSize.xs,
-    color: colors.text.tertiary,
+    paddingBottom: 100,
   },
   footerLoader: {
     paddingVertical: spacing.xl,
