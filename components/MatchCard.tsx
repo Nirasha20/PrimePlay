@@ -1,13 +1,12 @@
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  ImageSourcePropType,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { colors, spacing, borderRadius, fontSize, shadows } from '../constants/theme';
+import { borderRadius, colors, fontSize, shadows, spacing } from '../constants/theme';
 
 export interface MatchCardProps {
   id: string;

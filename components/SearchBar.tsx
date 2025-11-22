@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  TextInputProps,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius, fontSize } from '../constants/theme';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    StyleSheet,
+    TextInput,
+    TextInputProps,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { borderRadius, colors, fontSize, spacing } from '../constants/theme';
 
 interface SearchBarProps extends Omit<TextInputProps, 'onChange'> {
   onSearch: (query: string) => void;

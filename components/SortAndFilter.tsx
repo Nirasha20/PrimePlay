@@ -1,13 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius, fontSize } from '../constants/theme';
+import { borderRadius, colors, fontSize, spacing } from '../constants/theme';
 
 export type FilterStatus = 'all' | 'live' | 'upcoming' | 'completed';
 export type SortOption = 'recent' | 'popular' | 'upcoming';
