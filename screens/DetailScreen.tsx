@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
-    ActivityIndicator,
     Image,
     ScrollView,
     StyleSheet,
@@ -11,9 +10,13 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import DetailScreenSkeleton from '../components/LoadingSkeleton';
+import RelatedItemsCarousel from '../components/RelatedItemsCarousel';
+import ShareButton from '../components/ShareButton';
 import { borderRadius, colors, fontSize, shadows, spacing } from '../constants/theme';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { fetchMatchDetails } from '../redux/slices/matchesSlice';
+import { Match } from '../utils/api/sportsApi';
 
 interface StatItemProps {
   label: string;
@@ -34,7 +37,7 @@ const DetailScreen = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   
-  const { currentMatch, detailsLoading, detailsError } = useAppSelector(
+  const { currentMatch, detailsLoading, detailsError, list } = useAppSelector(
     (state) => state.matches
   );
 
@@ -43,6 +46,26 @@ const DetailScreen = () => {
       dispatch(fetchMatchDetails(id));
     }
   }, [id, dispatch]);
+
+  // Generate related matches based on same sport
+  const relatedMatches = useMemo(() => {
+    if (!currentMatch) return [];
+    
+    return list
+      .filter((match: Match) => 
+        match.sport === currentMatch.sport && match.id !== currentMatch.id
+      )
+      .slice(0, 5)
+      .map((match: Match) => ({
+        id: match.id,
+        title: `${match.homeTeam} vs ${match.awayTeam}`,
+        subtitle: match.sport,
+        image: match.image,
+        status: match.status,
+        date: match.date,
+        time: match.time,
+      }));
+  }, [currentMatch, list]);
 
   const getStatusBadgeStyle = (status: string) => {
     switch (status) {
@@ -71,14 +94,7 @@ const DetailScreen = () => {
   };
 
   if (detailsLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <LinearGradient colors={colors.background.gradient} style={styles.loadingGradient}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading match details...</Text>
-        </LinearGradient>
-      </View>
-    );
+    return <DetailScreenSkeleton />;
   }
 
   if (detailsError || !currentMatch) {
@@ -120,9 +136,11 @@ const DetailScreen = () => {
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Match Details</Text>
-          <TouchableOpacity style={styles.shareButton}>
-            <Ionicons name="share-outline" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
+          <ShareButton
+            title={`${currentMatch.homeTeam} vs ${currentMatch.awayTeam}`}
+            message={`Check out this ${currentMatch.sport} match: ${currentMatch.homeTeam} vs ${currentMatch.awayTeam} on ${currentMatch.date} at ${currentMatch.time}`}
+            url={`primeplay://match/${currentMatch.id}`}
+          />
         </View>
       </LinearGradient>
 
@@ -247,6 +265,14 @@ const DetailScreen = () => {
           </View>
         </View>
 
+        {/* Related Matches Carousel */}
+        {relatedMatches.length > 0 && (
+          <RelatedItemsCarousel
+            items={relatedMatches}
+            title={`More ${currentMatch.sport} Matches`}
+          />
+        )}
+
         <View style={styles.bottomSpacer} />
       </ScrollView>
     </View>
@@ -257,19 +283,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.dark,
-  },
-  loadingContainer: {
-    flex: 1,
-  },
-  loadingGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: spacing.lg,
-    fontSize: fontSize.md,
-    color: colors.text.secondary,
   },
   errorContainer: {
     flex: 1,
