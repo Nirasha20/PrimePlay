@@ -6,7 +6,8 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { borderRadius, colors, fontSize, shadows, spacing } from '../constants/theme';
+import { borderRadius, fontSize, shadows, spacing } from '../constants/theme';
+import { useThemedColors } from '../hooks/useThemedColors';
 
 export interface MatchCardProps {
   id: string;
@@ -34,6 +35,9 @@ const MatchCard: React.FC<MatchCardProps> = ({
   image,
   onPress,
 }) => {
+  const colors = useThemedColors();
+  const styles = createStyles(colors);
+  
   const getStatusBadge = () => {
     switch (status) {
       case 'live':
@@ -115,7 +119,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     backgroundColor: colors.background.card,
     borderRadius: borderRadius.lg,

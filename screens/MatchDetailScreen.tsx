@@ -11,7 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { borderRadius, colors, fontSize, shadows, spacing } from '../constants/theme';
+import ThemeToggle from '../components/ThemeToggle';
+import { borderRadius, fontSize, shadows, spacing } from '../constants/theme';
+import { useThemedColors } from '../hooks/useThemedColors';
 
 interface Player {
   id: number;
@@ -27,40 +29,50 @@ interface StatCardProps {
   icon: keyof typeof Ionicons.glyphMap;
   value: string;
   label: string;
+  colors: ReturnType<typeof useThemedColors>;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ icon, value, label }) => (
-  <View style={styles.statCard}>
-    <Ionicons name={icon} size={32} color={colors.primary} />
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
+const StatCard: React.FC<StatCardProps> = ({ icon, value, label, colors }) => {
+  const styles = createStyles(colors);
+  return (
+    <View style={styles.statCard}>
+      <Ionicons name={icon} size={32} color={colors.primary} />
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+};
 
 interface PlayerCardProps {
   player: Player;
   onPress: () => void;
+  colors: ReturnType<typeof useThemedColors>;
 }
 
-const PlayerCard: React.FC<PlayerCardProps> = ({ player, onPress }) => (
-  <TouchableOpacity style={styles.playerCard} onPress={onPress} activeOpacity={0.8}>
-    <View style={styles.playerNumberBadge}>
-      <Text style={styles.playerNumber}>#{player.number}</Text>
-    </View>
-    <Text style={styles.playerName} numberOfLines={1}>
-      {player.firstName} {player.lastName}
-    </Text>
-    <Text style={styles.playerPosition}>{player.position}</Text>
-    <View style={styles.playerRating}>
-      <Ionicons name="star" size={14} color={colors.warning.icon} />
-      <Text style={styles.ratingValue}>{player.rating}</Text>
-    </View>
-  </TouchableOpacity>
-);
+const PlayerCard: React.FC<PlayerCardProps> = ({ player, onPress, colors }) => {
+  const styles = createStyles(colors);
+  return (
+    <TouchableOpacity style={styles.playerCard} onPress={onPress} activeOpacity={0.8}>
+      <View style={styles.playerNumberBadge}>
+        <Text style={styles.playerNumber}>#{player.number}</Text>
+      </View>
+      <Text style={styles.playerName} numberOfLines={1}>
+        {player.firstName} {player.lastName}
+      </Text>
+      <Text style={styles.playerPosition}>{player.position}</Text>
+      <View style={styles.playerRating}>
+        <Ionicons name="star" size={14} color={colors.warning.icon} />
+        <Text style={styles.ratingValue}>{player.rating}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 const MatchDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const colors = useThemedColors();
+  const styles = createStyles(colors);
   const [homeTeamPlayers, setHomeTeamPlayers] = useState<Player[]>([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,9 +154,12 @@ const MatchDetailScreen = () => {
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Match Details</Text>
-          <TouchableOpacity style={styles.shareButton}>
-            <Ionicons name="share-outline" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <ThemeToggle />
+            <TouchableOpacity style={styles.shareButton}>
+              <Ionicons name="share-outline" size={24} color={colors.text.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
 
@@ -193,9 +208,9 @@ const MatchDetailScreen = () => {
 
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
-          <StatCard icon="eye" value={match.viewers} label="Viewers" />
-          <StatCard icon="people" value={match.totalPlayers} label="Players" />
-          <StatCard icon="flash" value={match.minutes} label="Minutes" />
+          <StatCard icon="eye" value={match.viewers} label="Viewers" colors={colors} />
+          <StatCard icon="people" value={match.totalPlayers} label="Players" colors={colors} />
+          <StatCard icon="flash" value={match.minutes} label="Minutes" colors={colors} />
         </View>
 
         {/* Match Info */}
@@ -253,6 +268,7 @@ const MatchDetailScreen = () => {
                 <PlayerCard
                   key={player.id}
                   player={player}
+                  colors={colors}
                   onPress={() => {
                     router.push({
                       pathname: '/player/[id]',
@@ -282,7 +298,7 @@ const MatchDetailScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.dark,
@@ -296,6 +312,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   backButton: {
     width: 40,

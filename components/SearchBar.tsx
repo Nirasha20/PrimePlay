@@ -7,7 +7,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { borderRadius, colors, fontSize, spacing } from '../constants/theme';
+import { borderRadius, fontSize, spacing } from '../constants/theme';
+import { useThemedColors } from '../hooks/useThemedColors';
 
 interface SearchBarProps extends Omit<TextInputProps, 'onChange'> {
   onSearch: (query: string) => void;
@@ -24,6 +25,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = 'Search teams, players...',
   ...props
 }) => {
+  const colors = useThemedColors();
+  const styles = createStyles(colors);
   const [searchText, setSearchText] = useState('');
 
   // Debounce search
@@ -94,7 +97,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',

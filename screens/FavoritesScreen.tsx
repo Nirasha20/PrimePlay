@@ -3,18 +3,25 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import BottomTabBar from '../components/BottomTabBar';
-import { borderRadius, colors, fontSize, shadows, spacing } from '../constants/theme';
+import ThemeToggle from '../components/ThemeToggle';
+import { borderRadius, fontSize, shadows, spacing } from '../constants/theme';
+import { useThemedColors } from '../hooks/useThemedColors';
 
 const FavoritesScreen = () => {
+  const colors = useThemedColors();
+  const styles = createStyles(colors);
   return (
     <View style={styles.container}>
       {/* Header */}
       <LinearGradient colors={colors.background.gradient} style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Favorites</Text>
-          <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="options-outline" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
+          <View style={{flexDirection: 'row', gap: spacing.sm}}>
+            <ThemeToggle />
+            <TouchableOpacity style={styles.filterButton}>
+              <Ionicons name="options-outline" size={24} color={colors.text.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
 
@@ -40,7 +47,7 @@ const FavoritesScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.dark,

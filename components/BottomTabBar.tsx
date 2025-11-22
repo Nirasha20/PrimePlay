@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { colors, shadows } from '../constants/theme';
+import { shadows } from '../constants/theme';
+import { useThemedColors } from '../hooks/useThemedColors';
 
 interface TabItem {
   name: string;
@@ -35,6 +36,8 @@ const TABS: TabItem[] = [
 const BottomTabBar = () => {
   const router = useRouter();
   const pathname = usePathname();
+  const colors = useThemedColors();
+  const styles = createStyles(colors);
 
   const isActive = (route: string) => {
     return pathname === route;
@@ -67,7 +70,7 @@ const BottomTabBar = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     position: 'absolute',
     bottom: 0,

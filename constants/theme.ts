@@ -1,4 +1,5 @@
-export const colors = {
+// Dark theme colors
+export const darkColors = {
   // Primary Colors
   primary: '#a855f7',
   primaryLight: '#a78bfa',
@@ -57,6 +58,74 @@ export const colors = {
     secondary: '#9ca3af',
   },
 };
+
+// Light theme colors
+export const lightColors = {
+  // Primary Colors
+  primary: '#a855f7',
+  primaryLight: '#c084fc',
+  primaryDark: '#7c3aed',
+
+  // Background Colors
+  background: {
+    gradient: ['#f9fafb', '#f3e8ff', '#e9d5ff'] as const,
+    dark: '#ffffff',
+    card: '#f9fafb',
+    input: '#f3f4f6',
+  },
+
+  // Text Colors
+  text: {
+    primary: '#1f2937',
+    secondary: '#4b5563',
+    tertiary: '#6b7280',
+    placeholder: '#9ca3af',
+  },
+
+  // Border Colors
+  border: {
+    default: '#e5e7eb',
+    focus: '#a78bfa',
+  },
+
+  // Status Colors
+  error: {
+    background: '#fee2e2',
+    text: '#dc2626',
+    icon: '#ef4444',
+  },
+
+  success: {
+    background: '#d1fae5',
+    text: '#059669',
+    icon: '#10b981',
+  },
+
+  warning: {
+    background: '#fef3c7',
+    text: '#d97706',
+    icon: '#f59e0b',
+  },
+
+  info: {
+    background: '#dbeafe',
+    text: '#2563eb',
+    icon: '#3b82f6',
+  },
+
+  // Icon Colors
+  icon: {
+    primary: '#a855f7',
+    secondary: '#6b7280',
+  },
+};
+
+// Default export for backward compatibility (dark theme)
+export const colors = darkColors;
+
+// Function to get colors based on theme
+export const getColors = (isDarkMode: boolean) => isDarkMode ? darkColors : lightColors;
+
 
 export const spacing = {
   xs: 4,

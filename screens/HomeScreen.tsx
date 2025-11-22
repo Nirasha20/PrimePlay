@@ -16,7 +16,9 @@ import BottomTabBar from '../components/BottomTabBar';
 import MatchCard from '../components/MatchCard';
 import SearchBar from '../components/SearchBar';
 import SortAndFilter, { FilterStatus, SortOption } from '../components/SortAndFilter';
-import { borderRadius, colors, fontSize, spacing } from '../constants/theme';
+import ThemeToggle from '../components/ThemeToggle';
+import { borderRadius, fontSize, spacing } from '../constants/theme';
+import { useThemedColors } from '../hooks/useThemedColors';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { fetchMatches, setSelectedSport } from '../redux/slices/matchesSlice';
 import { Match } from '../utils/api/sportsApi';
@@ -26,6 +28,8 @@ const SPORTS = ['All', 'Football', 'Cricket', 'Basketball', 'Tennis'];
 const HomeScreen = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const colors = useThemedColors();
+  const styles = createStyles(colors);
   const { list, loading, error, refreshing, hasMore, page, selectedSport } = useAppSelector(
     (state) => state.matches
   );
@@ -140,9 +144,7 @@ const HomeScreen = () => {
             <Ionicons name="football" size={24} color={colors.text.primary} />
             <Text style={styles.appName}>PrimePlay</Text>
           </View>
-          <TouchableOpacity style={styles.themeToggle}>
-            <Ionicons name="moon-outline" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
+          <ThemeToggle />
         </View>
 
         {/* Search Bar */}
@@ -224,7 +226,7 @@ const HomeScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.dark,
@@ -249,9 +251,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text.primary,
     marginLeft: spacing.md,
-  },
-  themeToggle: {
-    padding: spacing.sm,
   },
   sportsFilter: {
     paddingVertical: spacing.sm,
