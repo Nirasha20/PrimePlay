@@ -10,6 +10,9 @@ interface MatchesState {
   hasMore: boolean;
   refreshing: boolean;
   selectedSport: string;
+  currentMatch: Match | null;
+  detailsLoading: boolean;
+  detailsError: string | null;
 }
 
 const initialState: MatchesState = {
@@ -21,6 +24,9 @@ const initialState: MatchesState = {
   hasMore: true,
   refreshing: false,
   selectedSport: 'all',
+  currentMatch: null,
+  detailsLoading: false,
+  detailsError: null,
 };
 
 // Async thunk to fetch matches
@@ -36,6 +42,23 @@ export const fetchMatches = createAsyncThunk<
       return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch matches');
+    }
+  }
+);
+
+// Async thunk to fetch match details by ID
+export const fetchMatchDetails = createAsyncThunk<
+  Match,
+  string,
+  { rejectValue: string }
+>(
+  'matches/fetchMatchDetails',
+  async (matchId: string, { rejectWithValue }) => {
+    try {
+      const response = await sportsApi.getMatchById(matchId);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to fetch match details');
     }
   }
 );
@@ -99,6 +122,23 @@ const matchesSlice = createSlice({
         state.loading = false;
         state.refreshing = false;
         state.error = action.payload || 'Failed to fetch matches';
+      })
+      // Fetch match details - pending
+      .addCase(fetchMatchDetails.pending, (state) => {
+        state.detailsLoading = true;
+        state.detailsError = null;
+        state.currentMatch = null;
+      })
+      // Fetch match details - fulfilled
+      .addCase(fetchMatchDetails.fulfilled, (state, action) => {
+        state.detailsLoading = false;
+        state.currentMatch = action.payload;
+        state.detailsError = null;
+      })
+      // Fetch match details - rejected
+      .addCase(fetchMatchDetails.rejected, (state, action) => {
+        state.detailsLoading = false;
+        state.detailsError = action.payload || 'Failed to fetch match details';
       });
   },
 });
