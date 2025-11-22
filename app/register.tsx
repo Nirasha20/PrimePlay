@@ -1,5 +1,5 @@
 import RegisterScreen from '../screens/RegisterScreen';
 
-export default function SignUp() {
+export default function Register() {
   return <RegisterScreen />;
 }

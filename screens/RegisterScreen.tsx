@@ -1,21 +1,25 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { Formik } from 'formik';
 import React, { useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import * as Yup from 'yup';
 import { borderRadius, colors, fontSize, shadows, spacing } from '../constants/theme';
+import { authApi } from '../utils/api/authApi';
 
-// Validation Schema
+// Validation Schema - Simplified for testing
 const RegisterSchema = Yup.object().shape({
   username: Yup.string()
     .min(3, 'Username must be at least 3 characters')
@@ -26,11 +30,7 @@ const RegisterSchema = Yup.object().shape({
     .email('Invalid email address')
     .required('Email is required'),
   password: Yup.string()
-    .min(8, 'Password must be at least 8 characters')
-    .matches(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .matches(/[0-9]/, 'Password must contain at least one number')
-    .matches(/[@$!%*?&#]/, 'Password must contain at least one special character')
+    .min(6, 'Password must be at least 6 characters')
     .required('Password is required'),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref('password')], 'Passwords must match')
@@ -73,11 +73,13 @@ const calculatePasswordStrength = (password: string): { strength: number; label:
   return { strength, label, color };
 };
 
-const RegisterScreen = ({ navigation }: any) => {
+const RegisterScreen = () => {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registerError, setRegisterError] = useState('');
   const [passwordStrength, setPasswordStrength] = useState({ strength: 0, label: '', color: '' });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async (values: {
     username: string;
@@ -87,13 +89,39 @@ const RegisterScreen = ({ navigation }: any) => {
   }) => {
     try {
       setRegisterError('');
-      // TODO: Implement actual registration logic here
-      console.log('Register values:', values);
-
-      // Simulate API call
-      // await registerAPI(values);
+      setIsLoading(true);
+      
+      // Call DummyJSON API for registration
+      const response = await authApi.register({
+        name: values.username, // Using username as name for demo
+        username: values.username,
+        email: values.email,
+        password: values.password,
+      });
+      
+      console.log('Registration successful:', response.user);
+      
+      setIsLoading(false);
+      
+      Alert.alert(
+        '✅ Registration Successful',
+        `Welcome to PrimePlay, ${response.user.name}! You can now login.`,
+        [
+          {
+            text: 'Go to Login',
+            onPress: () => router.replace('/login'),
+          },
+        ]
+      );
+      
+      // TODO: Store token in AsyncStorage and navigate to home
+      // await AsyncStorage.setItem('authToken', response.token);
+      // router.replace('/(tabs)');
+      
     } catch (error: any) {
+      setIsLoading(false);
       setRegisterError(error.message || 'Registration failed. Please try again.');
+      console.error('Registration error:', error);
     }
   };
 
@@ -121,10 +149,26 @@ const RegisterScreen = ({ navigation }: any) => {
           <View style={styles.formContainer}>
             <Text style={styles.welcomeText}>Create Account</Text>
 
+            {/* Demo Info */}
+            <View style={styles.demoInfo}>
+              <View style={styles.demoInfoHeader}>
+                <Ionicons name="information-circle" size={18} color={colors.primary} />
+                <Text style={styles.demoInfoText}>Quick Test Registration</Text>
+              </View>
+              <Text style={styles.demoNote}>
+                Password only needs 6+ characters for testing
+              </Text>
+              <Text style={styles.demoNote}>
+                Tap "Use Demo Data" below to auto-fill
+              </Text>
+            </View>
+
             <Formik
               initialValues={{ username: '', email: '', password: '', confirmPassword: '' }}
               validationSchema={RegisterSchema}
               onSubmit={handleRegister}
+              validateOnChange={true}
+              validateOnBlur={true}
             >
               {({
                 handleChange,
@@ -134,8 +178,24 @@ const RegisterScreen = ({ navigation }: any) => {
                 errors,
                 touched,
                 isSubmitting,
+                setFieldValue,
               }) => (
                 <View style={styles.form}>
+                  {/* Quick Fill Button */}
+                  <TouchableOpacity
+                    style={styles.quickFillButton}
+                    onPress={() => {
+                      const randomNum = Math.floor(Math.random() * 1000);
+                      setFieldValue('username', `testuser${randomNum}`);
+                      setFieldValue('email', `testuser${randomNum}@example.com`);
+                      setFieldValue('password', 'test123');
+                      setFieldValue('confirmPassword', 'test123');
+                    }}
+                  >
+                    <Ionicons name="flash" size={16} color={colors.primary} />
+                    <Text style={styles.quickFillText}>Use Demo Data</Text>
+                  </TouchableOpacity>
+                  
                   {/* Username Input */}
                   <View style={styles.inputContainer}>
                     <View style={styles.inputWrapper}>
@@ -295,21 +355,25 @@ const RegisterScreen = ({ navigation }: any) => {
                   <TouchableOpacity
                     style={[
                       styles.registerButton,
-                      isSubmitting && styles.registerButtonDisabled,
+                      (isSubmitting || isLoading) && styles.registerButtonDisabled,
                     ]}
                     onPress={() => handleSubmit()}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isLoading}
                   >
-                    <Text style={styles.registerButtonText}>
-                      {isSubmitting ? 'Creating Account...' : 'Sign Up'}
-                    </Text>
+                    {isLoading ? (
+                      <ActivityIndicator color={colors.text.primary} />
+                    ) : (
+                      <Text style={styles.registerButtonText}>
+                        {isSubmitting ? 'Creating Account...' : 'Create Account'}
+                      </Text>
+                    )}
                   </TouchableOpacity>
 
                   {/* Login Link */}
                   <View style={styles.loginContainer}>
                     <Text style={styles.loginText}>Already have an account? </Text>
-                    <TouchableOpacity onPress={() => navigation?.navigate('Login')}>
-                      <Text style={styles.loginLink}>Login</Text>
+                    <TouchableOpacity onPress={() => router.push('/login')}>
+                      <Text style={styles.loginLink}>Sign In</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -389,6 +453,47 @@ const styles = StyleSheet.create({
     height: 56,
     borderWidth: 1,
     borderColor: colors.border.default,
+  },
+  demoInfo: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.lg,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  demoInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  demoInfoText: {
+    color: colors.text.secondary,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+  },
+  demoNote: {
+    color: colors.text.tertiary,
+    fontSize: fontSize.xs,
+    marginTop: 2,
+  },
+  quickFillButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  quickFillText: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
   },
   inputIcon: {
     marginRight: spacing.md,

@@ -1,44 +1,60 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { Formik } from 'formik';
 import React, { useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import * as Yup from 'yup';
 import { borderRadius, colors, fontSize, shadows, spacing } from '../constants/theme';
+import { authApi } from '../utils/api/authApi';
 
 // Validation Schema
 const LoginSchema = Yup.object().shape({
-  email: Yup.string()
-    .email('Invalid email address')
-    .required('Email is required'),
+  username: Yup.string()
+    .min(3, 'Username must be at least 3 characters')
+    .required('Username is required'),
   password: Yup.string()
     .min(6, 'Password must be at least 6 characters')
     .required('Password is required'),
 });
 
-const LoginScreen = ({ navigation }: any) => {
+const LoginScreen = () => {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async (values: { email: string; password: string }) => {
+  const handleLogin = async (values: { username: string; password: string }) => {
     try {
       setLoginError('');
-      // TODO: Implement actual login logic here
-      console.log('Login values:', values);
+      setIsLoading(true);
       
-      // Simulate API call
-      // await loginAPI(values.email, values.password);
+      // Call DummyJSON API for authentication
+      const response = await authApi.login({
+        username: values.username,
+        password: values.password,
+      });
+      
+      setIsLoading(false);
+      
+      // TODO: Store token in AsyncStorage
+      // await AsyncStorage.setItem('authToken', response.token);
+      
+      // Navigate to home after successful login
+      router.push('/home');
       
     } catch (error: any) {
+      setIsLoading(false);
       setLoginError(error.message || 'Login failed. Please try again.');
     }
   };
@@ -70,9 +86,11 @@ const LoginScreen = ({ navigation }: any) => {
             <Text style={styles.welcomeText}>Welcome Back</Text>
 
             <Formik
-              initialValues={{ email: '', password: '' }}
+              initialValues={{ username: '', password: '' }}
               validationSchema={LoginSchema}
               onSubmit={handleLogin}
+              validateOnChange={true}
+              validateOnBlur={true}
             >
               {({
                 handleChange,
@@ -82,31 +100,32 @@ const LoginScreen = ({ navigation }: any) => {
                 errors,
                 touched,
                 isSubmitting,
+                setFieldValue,
+                setFieldTouched,
               }) => (
                 <View style={styles.form}>
-                  {/* Email Input */}
+                  {/* Username Input */}
                   <View style={styles.inputContainer}>
                     <View style={styles.inputWrapper}>
                       <Ionicons
-                        name="mail-outline"
+                        name="person-outline"
                         size={20}
                         color={colors.icon.primary}
                         style={styles.inputIcon}
                       />
                       <TextInput
                         style={styles.input}
-                        placeholder="Email Address"
+                        placeholder="Username"
                         placeholderTextColor={colors.text.placeholder}
-                        value={values.email}
-                        onChangeText={handleChange('email')}
-                        onBlur={handleBlur('email')}
-                        keyboardType="email-address"
+                        value={values.username}
+                        onChangeText={handleChange('username')}
+                        onBlur={handleBlur('username')}
                         autoCapitalize="none"
-                        autoComplete="email"
+                        autoComplete="username"
                       />
                     </View>
-                    {touched.email && errors.email && (
-                      <Text style={styles.errorText}>{errors.email}</Text>
+                    {touched.username && errors.username && (
+                      <Text style={styles.errorText}>{errors.username}</Text>
                     )}
                   </View>
 
@@ -158,21 +177,25 @@ const LoginScreen = ({ navigation }: any) => {
                   <TouchableOpacity
                     style={[
                       styles.loginButton,
-                      isSubmitting && styles.loginButtonDisabled,
+                      (isSubmitting || isLoading) && styles.loginButtonDisabled,
                     ]}
                     onPress={() => handleSubmit()}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isLoading}
                   >
-                    <Text style={styles.loginButtonText}>
-                      {isSubmitting ? 'Logging in...' : 'Login'}
-                    </Text>
+                    {isLoading ? (
+                      <ActivityIndicator color={colors.text.primary} />
+                    ) : (
+                      <Text style={styles.loginButtonText}>
+                        {isSubmitting ? 'Logging in...' : 'Sign In'}
+                      </Text>
+                    )}
                   </TouchableOpacity>
 
                   {/* Sign Up Link */}
                   <View style={styles.signupContainer}>
                     <Text style={styles.signupText}>Don't have an account? </Text>
-                    <TouchableOpacity onPress={() => navigation?.navigate('SignUp')}>
-                      <Text style={styles.signupLink}>Sign up</Text>
+                    <TouchableOpacity onPress={() => router.push('/register')}>
+                      <Text style={styles.signupLink}>Sign Up</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -270,6 +293,54 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     marginTop: 6,
     marginLeft: spacing.xs,
+  },
+  demoInfo: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.lg,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  demoInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  demoInfoText: {
+    color: colors.text.secondary,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+  },
+  demoCredentials: {
+    color: colors.text.primary,
+    fontSize: fontSize.sm,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    marginTop: 2,
+  },
+  demoNote: {
+    color: colors.text.tertiary,
+    fontSize: fontSize.xs,
+    fontStyle: 'italic',
+    marginTop: spacing.xs,
+  },
+  quickFillButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  quickFillText: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
   },
   errorContainer: {
     flexDirection: 'row',

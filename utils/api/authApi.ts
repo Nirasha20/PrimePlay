@@ -1,4 +1,8 @@
-// Dummy authentication API using JSONPlaceholder or local mock data
+// Authentication API using DummyJSON API
+import axios from 'axios';
+
+// DummyJSON API Configuration
+const DUMMYJSON_BASE_URL = 'https://dummyjson.com';
 
 export interface User {
   id: string;
@@ -6,10 +10,13 @@ export interface User {
   email: string;
   username: string;
   token: string;
+  image?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 export interface LoginCredentials {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -26,102 +33,131 @@ export interface AuthResponse {
   message: string;
 }
 
-// Simulate API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Dummy users for testing
-const DUMMY_USERS: User[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    username: 'johndoe',
-    token: 'dummy-token-123456',
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    username: 'janesmith',
-    token: 'dummy-token-789012',
-  },
-];
+// Transform DummyJSON user to our User format
+const transformDummyUser = (dummyUser: any): User => {
+  return {
+    id: dummyUser.id?.toString() || '0',
+    name: `${dummyUser.firstName || ''} ${dummyUser.lastName || ''}`.trim(),
+    email: dummyUser.email || `${dummyUser.username}@primeplay.com`,
+    username: dummyUser.username || dummyUser.email?.split('@')[0] || 'user',
+    token: dummyUser.accessToken || dummyUser.token || `token-${Date.now()}`,
+    image: dummyUser.image,
+    firstName: dummyUser.firstName,
+    lastName: dummyUser.lastName,
+  };
+};
 
 export const authApi = {
-  // Login user
+  // Login user using DummyJSON API
+  // Credentials for testing:
+  // username: 'emilys', password: 'emilyspass'
+  // username: 'michaelw', password: 'michaelwpass'
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    await delay(1000); // Simulate network delay
+    try {
+      const response = await axios.post(`${DUMMYJSON_BASE_URL}/auth/login`, {
+        username: credentials.username,
+        password: credentials.password,
+        expiresInMins: 30, // Token expires in 30 minutes
+      });
 
-    // Simple validation for demo purposes
-    const user = DUMMY_USERS.find(u => u.email === credentials.email);
+      const user = transformDummyUser(response.data);
 
-    if (!user || credentials.password.length < 6) {
-      throw new Error('Invalid email or password');
+      return {
+        user,
+        token: user.token,
+        message: 'Login successful',
+      };
+    } catch (error: any) {
+      // Provide helpful error messages
+      if (error.response?.status === 400) {
+        throw new Error('Invalid username or password');
+      }
+      throw new Error(error.response?.data?.message || 'Login failed. Please try again.');
     }
-
-    return {
-      user,
-      token: user.token,
-      message: 'Login successful',
-    };
   },
 
   // Register new user
+  // Note: DummyJSON doesn't actually create users, but we simulate the process
   register: async (data: RegisterData): Promise<AuthResponse> => {
-    await delay(1200); // Simulate network delay
+    try {
+      // DummyJSON doesn't have a real registration endpoint
+      // We'll use the add user endpoint which simulates creation
+      const response = await axios.post(`${DUMMYJSON_BASE_URL}/users/add`, {
+        firstName: data.name.split(' ')[0] || data.name,
+        lastName: data.name.split(' ').slice(1).join(' ') || '',
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      });
 
-    // Check if user already exists
-    const existingUser = DUMMY_USERS.find(
-      u => u.email === data.email || u.username === data.username
-    );
+      const user = transformDummyUser(response.data);
+      
+      // Generate a mock token for the new user
+      user.token = `mock-token-${Date.now()}`;
 
-    if (existingUser) {
-      throw new Error('User with this email or username already exists');
+      return {
+        user,
+        token: user.token,
+        message: 'Registration successful',
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Registration failed. Please try again.');
     }
-
-    // Create new user
-    const newUser: User = {
-      id: (DUMMY_USERS.length + 1).toString(),
-      name: data.name,
-      email: data.email,
-      username: data.username,
-      token: `dummy-token-${Date.now()}`,
-    };
-
-    DUMMY_USERS.push(newUser);
-
-    return {
-      user: newUser,
-      token: newUser.token,
-      message: 'Registration successful',
-    };
   },
 
   // Logout user
   logout: async (): Promise<{ message: string }> => {
-    await delay(300);
+    // DummyJSON doesn't have a logout endpoint
+    // Just return success
     return { message: 'Logout successful' };
   },
 
-  // Verify token (for auto-login)
+  // Verify token and get current user
   verifyToken: async (token: string): Promise<User | null> => {
-    await delay(500);
+    try {
+      // Get current authenticated user
+      const response = await axios.get(`${DUMMYJSON_BASE_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    const user = DUMMY_USERS.find(u => u.token === token);
-    return user || null;
+      return transformDummyUser(response.data);
+    } catch (error) {
+      return null;
+    }
   },
 
   // Get current user profile
   getProfile: async (token: string): Promise<User> => {
-    await delay(600);
+    try {
+      const response = await axios.get(`${DUMMYJSON_BASE_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    const user = DUMMY_USERS.find(u => u.token === token);
-
-    if (!user) {
-      throw new Error('User not found');
+      return transformDummyUser(response.data);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch profile');
     }
+  },
 
-    return user;
+  // Refresh auth token
+  refreshToken: async (token: string): Promise<{ token: string; refreshToken: string }> => {
+    try {
+      const response = await axios.post(`${DUMMYJSON_BASE_URL}/auth/refresh`, {
+        refreshToken: token,
+        expiresInMins: 30,
+      });
+
+      return {
+        token: response.data.accessToken || response.data.token,
+        refreshToken: response.data.refreshToken,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to refresh token');
+    }
   },
 };
 
