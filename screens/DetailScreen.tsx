@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Image,
     ScrollView,
@@ -69,6 +69,7 @@ const DetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const [activeTab, setActiveTab] = useState<'overview' | 'stats' | 'players'>('overview');
   
   const { currentMatch, detailsLoading, detailsError, list } = useAppSelector(
     (state) => state.matches
@@ -100,8 +101,11 @@ const DetailScreen = () => {
       }));
   }, [currentMatch, list]);
 
-  // Dummy starting XI data
-  const startingXI: LineupPlayer[] = useMemo(() => [
+  // Tab state for team selection
+  const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
+
+  // Dummy home team starting XI
+  const homeTeamLineup: LineupPlayer[] = useMemo(() => [
     { id: '1', name: 'David de Gea', position: 'GK', number: 1, rating: 7.5 },
     { id: '2', name: 'Harry Maguire', position: 'CB', number: 5, rating: 6.8 },
     { id: '3', name: 'Lisandro Martínez', position: 'CB', number: 6, rating: 7.2 },
@@ -113,6 +117,21 @@ const DetailScreen = () => {
     { id: '9', name: 'Antony', position: 'RW', number: 21, rating: 7.0 },
     { id: '10', name: 'Alejandro Garnacho', position: 'ST', number: 17, rating: 7.4 },
     { id: '11', name: 'Rasmus Højlund', position: 'ST', number: 11, rating: 7.3 },
+  ], []);
+
+  // Dummy away team starting XI
+  const awayTeamLineup: LineupPlayer[] = useMemo(() => [
+    { id: '12', name: 'Alisson Becker', position: 'GK', number: 1, rating: 7.8 },
+    { id: '13', name: 'Trent Alexander-Arnold', position: 'RB', number: 66, rating: 7.5 },
+    { id: '14', name: 'Virgil van Dijk', position: 'CB', number: 4, rating: 8.0 },
+    { id: '15', name: 'Ibrahima Konaté', position: 'CB', number: 5, rating: 7.3 },
+    { id: '16', name: 'Andy Robertson', position: 'LB', number: 26, rating: 7.2 },
+    { id: '17', name: 'Alexis Mac Allister', position: 'DM', number: 10, rating: 7.4 },
+    { id: '18', name: 'Dominik Szoboszlai', position: 'CM', number: 8, rating: 7.6 },
+    { id: '19', name: 'Mohamed Salah', position: 'RW', number: 11, rating: 8.3 },
+    { id: '20', name: 'Luis Díaz', position: 'LW', number: 7, rating: 7.7 },
+    { id: '21', name: 'Darwin Núñez', position: 'ST', number: 9, rating: 7.1 },
+    { id: '22', name: 'Cody Gakpo', position: 'ST', number: 18, rating: 7.0 },
   ], []);
 
   const handlePlayerPress = (playerId: string) => {
@@ -181,30 +200,12 @@ const DetailScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <LinearGradient colors={colors.background.gradient} style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Match Details</Text>
-          <ShareButton
-            title={`${currentMatch.homeTeam} vs ${currentMatch.awayTeam}`}
-            message={`Check out this ${currentMatch.sport} match: ${currentMatch.homeTeam} vs ${currentMatch.awayTeam} on ${currentMatch.date} at ${currentMatch.time}`}
-            url={`primeplay://match/${currentMatch.id}`}
-          />
-        </View>
-      </LinearGradient>
-
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        {/* Hero Image */}
+        {/* Hero Image with Overlay Header */}
         {currentMatch.image && (
           <View style={styles.heroContainer}>
             <Image
@@ -213,111 +214,91 @@ const DetailScreen = () => {
               resizeMode="cover"
             />
             <LinearGradient
-              colors={['transparent', colors.background.dark]}
+              colors={['rgba(0,0,0,0.6)', 'transparent', colors.background.dark]}
               style={styles.heroGradient}
             />
-            <View style={[styles.statusBadge, getStatusBadgeStyle(currentMatch.status)]}>
-              <Text style={styles.statusText}>
-                {getStatusText(currentMatch.status)}
-              </Text>
+            
+            {/* Absolute Header */}
+            <View style={styles.absoluteHeader}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => router.back()}
+              >
+                <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>{currentMatch.sport}</Text>
+              <ShareButton
+                title={`${currentMatch.homeTeam} vs ${currentMatch.awayTeam}`}
+                message={`Check out this ${currentMatch.sport} match: ${currentMatch.homeTeam} vs ${currentMatch.awayTeam} on ${currentMatch.date} at ${currentMatch.time}`}
+                url={`primeplay://match/${currentMatch.id}`}
+              />
             </View>
           </View>
         )}
 
-        {/* Match Info Card */}
-        <View style={styles.matchInfoCard}>
-          <Text style={styles.sportLabel}>{currentMatch.sport.toUpperCase()}</Text>
-          
-          {/* Teams and Score */}
-          <View style={styles.teamsSection}>
-            <View style={styles.teamContainer}>
-              <View style={styles.teamInfo}>
-                <Text style={styles.teamName}>{currentMatch.homeTeam}</Text>
-                {currentMatch.homeScore !== undefined && (
-                  <Text style={styles.teamScore}>{currentMatch.homeScore}</Text>
-                )}
-              </View>
+        {/* Score Card */}
+        <View style={styles.scoreCard}>
+          <View style={styles.scoreRow}>
+            <View style={styles.teamScoreSection}>
+              {currentMatch.homeScore !== undefined && (
+                <Text style={styles.scoreValue}>{currentMatch.homeScore}</Text>
+              )}
+              <Text style={styles.scoreTeamName}>{currentMatch.homeTeam}</Text>
             </View>
 
-            <View style={styles.vsContainer}>
-              <Text style={styles.vsText}>VS</Text>
+            <View style={styles.scoreCenter}>
+              <Text style={[styles.statusText, getStatusBadgeStyle(currentMatch.status)]}>
+                {getStatusText(currentMatch.status)}
+              </Text>
+              <Text style={styles.scoreDate}>{currentMatch.date === '2025-11-22' ? 'Today' : 'Yesterday'}</Text>
             </View>
 
-            <View style={styles.teamContainer}>
-              <View style={styles.teamInfo}>
-                <Text style={styles.teamName}>{currentMatch.awayTeam}</Text>
-                {currentMatch.awayScore !== undefined && (
-                  <Text style={styles.teamScore}>{currentMatch.awayScore}</Text>
-                )}
-              </View>
+            <View style={styles.teamScoreSection}>
+              {currentMatch.awayScore !== undefined && (
+                <Text style={styles.scoreValue}>{currentMatch.awayScore}</Text>
+              )}
+              <Text style={styles.scoreTeamName}>{currentMatch.awayTeam}</Text>
             </View>
           </View>
 
-          {/* Match Meta Information */}
-          <View style={styles.metaContainer}>
-            <View style={styles.metaRow}>
-              <Ionicons name="calendar-outline" size={20} color={colors.text.tertiary} />
-              <Text style={styles.metaText}>{currentMatch.date}</Text>
+          {/* Match Time */}
+          <View style={styles.matchTimeRow}>
+            <View style={styles.timeItem}>
+              <Ionicons name="calendar-outline" size={16} color={colors.text.tertiary} />
+              <Text style={styles.timeText}>{currentMatch.date === '2025-11-22' ? 'Today' : currentMatch.date}</Text>
             </View>
-            <View style={styles.metaRow}>
-              <Ionicons name="time-outline" size={20} color={colors.text.tertiary} />
-              <Text style={styles.metaText}>{currentMatch.time}</Text>
+            <View style={styles.timeItem}>
+              <Ionicons name="time-outline" size={16} color={colors.text.tertiary} />
+              <Text style={styles.timeText}>{currentMatch.time}</Text>
+            </View>
+            <View style={[styles.liveIndicator, currentMatch.status === 'live' && styles.liveIndicatorActive]}>
+              <Text style={styles.liveText}>{currentMatch.status === 'live' ? 'Live' : getStatusText(currentMatch.status)}</Text>
             </View>
           </View>
         </View>
 
-        {/* Statistics Section */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="stats-chart" size={24} color={colors.primary} />
-            <Text style={styles.sectionTitle}>Match Statistics</Text>
+        {/* Stats Cards */}
+        <View style={styles.statsCardsContainer}>
+          <View style={styles.statCard}>
+            <Ionicons name="eye" size={32} color={colors.primary} />
+            <Text style={styles.statCardValue}>2.3M</Text>
+            <Text style={styles.statCardLabel}>Viewers</Text>
           </View>
-          
-          <View style={styles.statsGrid}>
-            <StatItem label="Possession" value="65%" icon="pie-chart" />
-            <StatItem label="Shots" value="18" icon="football" />
-            <StatItem label="On Target" value="12" icon="checkmark-circle" />
-            <StatItem label="Corners" value="8" icon="flag" />
-            <StatItem label="Fouls" value="14" icon="warning" />
-            <StatItem label="Yellow Cards" value="3" icon="card" />
+          <View style={styles.statCard}>
+            <Ionicons name="people" size={32} color={colors.primary} />
+            <Text style={styles.statCardValue}>11 v 11</Text>
+            <Text style={styles.statCardLabel}>Players</Text>
           </View>
-        </View>
-
-        {/* Starting XI Section */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="people" size={24} color={colors.primary} />
-            <Text style={styles.sectionTitle}>{currentMatch.homeTeam} - Starting XI</Text>
-          </View>
-          
-          <View style={styles.lineupGrid}>
-            {startingXI.map((player) => (
-              <PlayerLineupCard
-                key={player.id}
-                player={player}
-                onPress={() => handlePlayerPress(player.id)}
-              />
-            ))}
+          <View style={styles.statCard}>
+            <Ionicons name="flash" size={32} color={colors.primary} />
+            <Text style={styles.statCardValue}>45+3</Text>
+            <Text style={styles.statCardLabel}>Minutes</Text>
           </View>
         </View>
 
-        {/* Match Description */}
+        {/* Match Info */}
         <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="document-text" size={24} color={colors.primary} />
-            <Text style={styles.sectionTitle}>About This Match</Text>
-          </View>
-          <Text style={styles.description}>
-            {`This exciting ${currentMatch.sport} match between ${currentMatch.homeTeam} and ${currentMatch.awayTeam} is ${currentMatch.status === 'upcoming' ? 'scheduled for' : currentMatch.status === 'live' ? 'currently taking place on' : 'took place on'} ${currentMatch.date} at ${currentMatch.time}.`}
-          </Text>
-        </View>
-
-        {/* Additional Information */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="information-circle" size={24} color={colors.primary} />
-            <Text style={styles.sectionTitle}>Additional Info</Text>
-          </View>
+          <Text style={styles.sectionTitle}>Match Info</Text>
           <View style={styles.infoList}>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Competition</Text>
@@ -325,18 +306,166 @@ const DetailScreen = () => {
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Venue</Text>
-              <Text style={styles.infoValue}>Stadium Name</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Referee</Text>
-              <Text style={styles.infoValue}>John Doe</Text>
+              <Text style={styles.infoValue}>Old Trafford</Text>
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Attendance</Text>
-              <Text style={styles.infoValue}>75,000</Text>
+              <Text style={styles.infoValue}>74,000</Text>
             </View>
           </View>
         </View>
+
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
+            onPress={() => setActiveTab('overview')}
+          >
+            <Ionicons
+              name="eye-outline"
+              size={20}
+              color={activeTab === 'overview' ? colors.primary : colors.text.tertiary}
+            />
+            <Text style={[styles.tabText, activeTab === 'overview' && styles.tabTextActive]}>
+              Overview
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'stats' && styles.tabActive]}
+            onPress={() => setActiveTab('stats')}
+          >
+            <Ionicons
+              name="stats-chart-outline"
+              size={20}
+              color={activeTab === 'stats' ? colors.primary : colors.text.tertiary}
+            />
+            <Text style={[styles.tabText, activeTab === 'stats' && styles.tabTextActive]}>
+              Stats
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'players' && styles.tabActive]}
+            onPress={() => setActiveTab('players')}
+          >
+            <Ionicons
+              name="people-outline"
+              size={20}
+              color={activeTab === 'players' ? colors.primary : colors.text.tertiary}
+            />
+            <Text style={[styles.tabText, activeTab === 'players' && styles.tabTextActive]}>
+              Players
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Overview Tab Content */}
+        {activeTab === 'overview' && (
+          <>
+            {/* Match Description */}
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="document-text" size={24} color={colors.primary} />
+                <Text style={styles.sectionTitle}>About This Match</Text>
+              </View>
+              <Text style={styles.description}>
+                {`This exciting ${currentMatch.sport} match between ${currentMatch.homeTeam} and ${currentMatch.awayTeam} is ${currentMatch.status === 'upcoming' ? 'scheduled for' : currentMatch.status === 'live' ? 'currently taking place on' : 'took place on'} ${currentMatch.date} at ${currentMatch.time}.`}
+              </Text>
+            </View>
+
+            {/* Additional Information */}
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="information-circle" size={24} color={colors.primary} />
+                <Text style={styles.sectionTitle}>Match Info</Text>
+              </View>
+              <View style={styles.infoList}>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Competition</Text>
+                  <Text style={styles.infoValue}>Premier League</Text>
+                </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Venue</Text>
+                  <Text style={styles.infoValue}>Old Trafford</Text>
+                </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Referee</Text>
+                  <Text style={styles.infoValue}>John Doe</Text>
+                </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Attendance</Text>
+                  <Text style={styles.infoValue}>74,000</Text>
+                </View>
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* Stats Tab Content */}
+        {activeTab === 'stats' && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="stats-chart" size={24} color={colors.primary} />
+              <Text style={styles.sectionTitle}>Match Statistics</Text>
+            </View>
+            
+            <View style={styles.statsGrid}>
+              <StatItem label="Possession" value="65%" icon="pie-chart" />
+              <StatItem label="Shots" value="18" icon="football" />
+              <StatItem label="On Target" value="12" icon="checkmark-circle" />
+              <StatItem label="Corners" value="8" icon="flag" />
+              <StatItem label="Fouls" value="14" icon="warning" />
+              <StatItem label="Yellow Cards" value="3" icon="card" />
+            </View>
+          </View>
+        )}
+
+        {/* Players Tab Content */}
+        {activeTab === 'players' && (
+          <>
+            {/* Team Selection Tabs */}
+            <View style={styles.teamTabsContainer}>
+              <TouchableOpacity
+                style={[styles.teamTab, selectedTeam === 'home' && styles.teamTabActive]}
+                onPress={() => setSelectedTeam('home')}
+              >
+                <Text style={[styles.teamTabText, selectedTeam === 'home' && styles.teamTabTextActive]}>
+                  {currentMatch.homeTeam}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.teamTab, selectedTeam === 'away' && styles.teamTabActive]}
+                onPress={() => setSelectedTeam('away')}
+              >
+                <Text style={[styles.teamTabText, selectedTeam === 'away' && styles.teamTabTextActive]}>
+                  {currentMatch.awayTeam}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Starting XI */}
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="people" size={24} color={colors.primary} />
+                <Text style={styles.sectionTitle}>
+                  {selectedTeam === 'home' ? currentMatch.homeTeam : currentMatch.awayTeam} - Starting XI
+                </Text>
+              </View>
+              
+              <View style={styles.lineupGrid}>
+                {(selectedTeam === 'home' ? homeTeamLineup : awayTeamLineup).map((player) => (
+                  <PlayerLineupCard
+                    key={player.id}
+                    player={player}
+                    onPress={() => handlePlayerPress(player.id)}
+                  />
+                ))}
+              </View>
+            </View>
+          </>
+        )}
 
         {/* Related Matches Carousel */}
         {relatedMatches.length > 0 && (
@@ -396,21 +525,42 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontSize: fontSize.md,
   },
-  header: {
-    paddingTop: spacing.huge,
-    paddingHorizontal: spacing.xxl,
-    paddingBottom: spacing.lg,
+  scrollView: {
+    flex: 1,
   },
-  headerContent: {
+  heroContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 400,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  absoluteHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: spacing.huge,
+    paddingHorizontal: spacing.xxl,
+    paddingBottom: spacing.lg,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: borderRadius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -419,32 +569,102 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text.primary,
   },
-  shareButton: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  scoreCard: {
+    backgroundColor: colors.background.card,
+    marginHorizontal: spacing.xxl,
+    marginTop: -spacing.xxxl,
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
+    ...shadows.medium,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
-  scrollView: {
+  teamScoreSection: {
     flex: 1,
+    alignItems: 'center',
   },
-  heroContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 300,
+  scoreValue: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
   },
-  heroImage: {
-    width: '100%',
-    height: '100%',
+  scoreTeamName: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
-  heroGradient: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 100,
+  scoreCenter: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  scoreDate: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    marginTop: spacing.xs,
+  },
+  matchTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.default,
+  },
+  timeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  timeText: {
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
+  },
+  liveIndicator: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.text.tertiary,
+  },
+  liveIndicatorActive: {
+    backgroundColor: colors.error.icon,
+  },
+  liveText: {
+    fontSize: fontSize.xs,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    textTransform: 'uppercase',
+  },
+  statsCardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xxl,
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+    ...shadows.small,
+  },
+  statCardValue: {
+    fontSize: fontSize.xl,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginTop: spacing.sm,
+  },
+  statCardLabel: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    marginTop: spacing.xs,
   },
   statusBadge: {
     position: 'absolute',
@@ -603,6 +823,66 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: spacing.huge,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.background.card,
+    marginHorizontal: spacing.xxl,
+    marginBottom: spacing.lg,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xs,
+    ...shadows.small,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+  },
+  tabActive: {
+    backgroundColor: colors.primary + '20',
+  },
+  tabText: {
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
+    fontWeight: '500',
+  },
+  tabTextActive: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  teamTabsContainer: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.xxl,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  teamTab: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background.card,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.border.default,
+  },
+  teamTabActive: {
+    backgroundColor: colors.primary + '20',
+    borderColor: colors.primary,
+  },
+  teamTabText: {
+    fontSize: fontSize.md,
+    color: colors.text.secondary,
+    fontWeight: '500',
+  },
+  teamTabTextActive: {
+    color: colors.primary,
+    fontWeight: 'bold',
   },
   lineupGrid: {
     flexDirection: 'row',
