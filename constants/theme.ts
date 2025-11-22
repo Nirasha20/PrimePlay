@@ -45,6 +45,12 @@ export const colors = {
     icon: '#f59e0b',
   },
 
+  info: {
+    background: '#1e3a8a',
+    text: '#93c5fd',
+    icon: '#3b82f6',
+  },
+
   // Icon Colors
   icon: {
     primary: '#a78bfa',
